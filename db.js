@@ -80,7 +80,8 @@ db.on("populate", () => {
     { key: 'units', value: 'lbs' }, // 'lbs' or 'kg'
     { key: 'defaultRestTime', value: 90 }, // in seconds
     { key: 'vibrateOnTimerEnd', value: true },
-    { key: 'soundOnTimerEnd', value: true }
+    { key: 'soundOnTimerEnd', value: true },
+    { key: 'syncUrl', value: 'https://script.google.com/macros/s/AKfycbzAlxemxHzTHpmFUnGpaZjIc63z4ZOAVwT4QbkGdwI_gflWLY1aDxJl_YcfsMmoU2BD/exec' }
   ]);
   
   // Seed a sample routine to get the user started!
