@@ -1,5 +1,5 @@
 // sw.js - Service Worker for Offline Gym Use
-const CACHE_NAME = "hevy-clone-v1";
+const CACHE_NAME = "hevy-clone-v2";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
