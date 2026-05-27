@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Hevy Workout Tracker</title>
+  
+  <!-- Web App Manifest & PWA Configuration -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0A84FF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icon.svg">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- CDNs for External Libraries -->
+  <!-- Dexie.js for easy IndexedDB wrapper -->
+  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- App Shell: Holds the PWA layout, restricted to mobile width on desktop -->
+  <div id="app-shell">
+    
+    <!-- Top Header Bar -->
+    <header>
+      <h1 id="header-title">HEVY</h1>
+      <div id="header-actions">
+        <!-- Dynamic header actions will be rendered here if needed -->
+      </div>
+    </header>
+
+    <!-- Floating Rest Timer Banner (slides down below header during workout) -->
+    <div id="rest-timer-banner">
+      <div class="rest-timer-info">
+        <i data-lucide="timer"></i>
+        <span>Rest: <strong id="rest-timer-display">01:30</strong></span>
+      </div>
+      <div class="rest-timer-controls">
+        <button class="btn btn-sm btn-text" onclick="workoutManager.adjustRest(-15)">-15s</button>
+        <button class="btn btn-sm btn-text" onclick="workoutManager.adjustRest(15)">+15s</button>
+        <button class="btn btn-sm btn-primary" onclick="workoutManager.skipRest()">Skip</button>
+      </div>
+      <div class="rest-radial-bar" id="rest-timer-progress"></div>
+    </div>
+
+    <!-- Main Content Scrollable Area -->
+    <main id="main-content">
+      
+      <!-- TAB 1: PROFILE SCREEN -->
+      <section id="tab-profile" class="tab-screen active">
+        <div class="profile-hero">
+          <div class="profile-avatar">U</div>
+          <div class="profile-meta">
+            <h2>You</h2>
+            <div class="streak-badge">
+              <i data-lucide="flame" style="width: 14px; height: 14px;"></i>
+              <span id="profile-streak">0 Week Streak</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-val" id="stat-workouts">0</div>
+            <div class="stat-lbl">Workouts</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-val" id="stat-volume">0 lbs</div>
+            <div class="stat-lbl">Total Vol</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-val" id="stat-sets">0</div>
+            <div class="stat-lbl">Sets</div>
+          </div>
+        </div>
+
+        <!-- Weekly Workout Frequency Visualizer -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Workout Frequency</div>
+            <div class="card-subtitle">Last 7 Days</div>
+          </div>
+          <div class="frequency-calendar" id="freq-calendar-container">
+            <!-- Weekly grid items injected via JS -->
+          </div>
+        </div>
+
+        <!-- Settings and Backups Section -->
+        <div class="settings-section-title">Settings & Backup</div>
+        
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Weight Units</h4>
+            <p>Select your default lifting units</p>
+          </div>
+          <div class="setting-control">
+            <select id="setting-units" onchange="settingsManager.updateUnits(this.value)">
+              <option value="lbs">lbs (Pounds)</option>
+              <option value="kg">kg (Kilograms)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Default Rest Timer</h4>
+            <p>Duration of rest between sets</p>
+          </div>
+          <div class="setting-control">
+            <select id="setting-rest" onchange="settingsManager.updateDefaultRest(this.value)">
+              <option value="30">30 seconds</option>
+              <option value="60">1 minute</option>
+              <option value="90">1:30 minutes</option>
+              <option value="120">2 minutes</option>
+              <option value="180">3 minutes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px;">
+          <div class="card-header">
+            <div class="card-title" style="font-size: 14px;">Database Backup</div>
+            <div class="card-subtitle">Keep your training logs safe</div>
+          </div>
+          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+            Export your workouts to your phone local file system. You can restore your data on any device by importing this file.
+          </p>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-sm btn-primary" onclick="settingsManager.exportData()" style="flex: 1;">
+              <i data-lucide="download" style="width: 14px; height: 14px;"></i> Export Backup
+            </button>
+            <button class="btn btn-sm btn-success" onclick="document.getElementById('import-file-input').click()" style="flex: 1;">
+              <i data-lucide="upload" style="width: 14px; height: 14px;"></i> Import Backup
+            </button>
+            <input type="file" id="import-file-input" style="display: none;" accept=".json" onchange="settingsManager.importData(event)">
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: WORKOUTS SCREEN (ROUTINES) -->
+      <section id="tab-workouts" class="tab-screen">
+        <div class="workout-templates-header">
+          <div class="section-title">Start Workout</div>
+        </div>
+        
+        <button class="btn btn-primary" onclick="workoutManager.startEmptyWorkout()" style="margin-bottom: 24px;">
+          <i data-lucide="plus"></i> Start an Empty Workout
+        </button>
+
+        <div class="workout-templates-header">
+          <div class="section-title">Routines Templates</div>
+          <button class="btn btn-sm btn-text" onclick="routinesManager.openCreateModal()">
+            <i data-lucide="plus" style="width: 16px; height: 16px;"></i> Create
+          </button>
+        </div>
+
+        <div id="routines-list-container">
+          <!-- User saved routines templates injected via JS -->
+        </div>
+      </section>
+
+      <!-- TAB 3: EXERCISES LIBRARY SCREEN -->
+      <section id="tab-exercises" class="tab-screen">
+        <div class="search-bar-container">
+          <input type="text" id="exercise-search" class="input-field" placeholder="Search exercises..." oninput="exerciseLibrary.filterExercises()">
+          <button class="btn btn-primary" style="width: 44px; padding: 0;" onclick="exerciseLibrary.openCreateModal()">
+            <i data-lucide="plus"></i>
+          </button>
+        </div>
+
+        <!-- Scrollable Muscle Group Filter Selection -->
+        <div class="muscle-pill-container" id="muscle-filters">
+          <!-- Muscle group pills injected via JS -->
+        </div>
+
+        <div class="exercise-list" id="exercise-list-container">
+          <!-- Exercise inventory list injected via JS -->
+        </div>
+      </section>
+
+      <!-- TAB 4: WORKOUT HISTORY LOGS SCREEN -->
+      <section id="tab-history" class="tab-screen">
+        <div class="section-title" style="margin-bottom: 16px;">Training History</div>
+        <div id="history-list-container">
+          <!-- Scrollable card list of completed workouts injected via JS -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation Tabs Tab-Bar -->
+    <nav>
+      <button class="nav-tab active" onclick="router.navigate('profile')">
+        <i data-lucide="user"></i>
+        <span>Profile</span>
+      </button>
+      <button class="nav-tab" onclick="router.navigate('workouts')">
+        <i data-lucide="calendar"></i>
+        <span>Workouts</span>
+      </button>
+      <button class="nav-tab" onclick="router.navigate('exercises')">
+        <i data-lucide="dumbbell"></i>
+        <span>Exercises</span>
+      </button>
+      <button class="nav-tab" onclick="router.navigate('history')">
+        <i data-lucide="history"></i>
+        <span>History</span>
+      </button>
+    </nav>
+
+    <!-- ACTIVE WORKOUT LOGGER SHEET OVERLAY (Slides up/down, can minimize) -->
+    <div id="active-workout-sheet">
+      <!-- Minimized top banner inside tab bar view -->
+      <div class="minimized-workout-bar" onclick="workoutManager.maximize()">
+        <div class="minimized-info">
+          <i data-lucide="timer"></i>
+          <span id="mini-timer">00:00</span>
+          <span id="mini-title">Active Workout</span>
+        </div>
+        <i data-lucide="chevron-up"></i>
+      </div>
+
+      <!-- Maximize Normal Logger Header -->
+      <div class="modal-header">
+        <div>
+          <input type="text" id="active-workout-title" class="modal-title" style="background: transparent; border: none; color: #fff; width: 220px; outline: none;" value="Empty Workout">
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+            <i data-lucide="clock" style="width: 12px; height: 12px;"></i>
+            <span id="active-workout-timer">00:00</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-sm btn-text" onclick="workoutManager.minimize()"><i data-lucide="chevron-down"></i></button>
+          <button class="btn btn-sm btn-success" onclick="workoutManager.finishWorkout()">Finish</button>
+        </div>
+      </div>
+
+      <!-- Maximize Scroll Area for Workout Logger -->
+      <div class="workout-scroll-area" id="active-workout-exercises-container">
+        <!-- Active exercises set logs grids injected here via JS -->
+      </div>
+
+      <!-- Maximize Sticky Actions Footer -->
+      <div class="modal-footer" style="flex-direction: column; background-color: var(--bg-color);">
+        <div style="display: flex; gap: 10px; width: 100%;">
+          <button class="btn btn-primary" style="flex: 3;" onclick="exerciseLibrary.openSelectModal('workout')">
+            <i data-lucide="plus"></i> Add Exercise
+          </button>
+          <button class="btn btn-danger" style="flex: 1;" onclick="workoutManager.cancelWorkout()">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- End App Shell -->
+
+  <!-- ================= OVERLAY DIALOG MODALS ================= -->
+
+  <!-- 1. EXERCISE DETAIL MODAL (History, PRs) -->
+  <div class="modal-overlay" id="exercise-detail-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="edm-title">Exercise Detail</h3>
+        <button class="btn btn-sm btn-text" onclick="modalManager.close('exercise-detail-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Personal Records</div>
+          </div>
+          <div id="edm-prs-container" style="font-size: 14px; display: flex; flex-direction: column; gap: 8px;">
+            <!-- PR stats injected via JS -->
+          </div>
+        </div>
+        
+        <div class="section-title" style="margin-bottom: 12px; font-size: 16px;">Historical Logs</div>
+        <div id="edm-history-container" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Past logs for this exercise injected via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. ROUTINE CREATOR / EDITOR MODAL -->
+  <div class="modal-overlay" id="routine-editor-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="rem-title">Create Routine</h3>
+        <button class="btn btn-sm btn-text" onclick="modalManager.close('routine-editor-modal')">Cancel</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Routine Name</label>
+          <input type="text" id="rem-name" class="input-field" placeholder="e.g. Push Day A">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes (Optional)</label>
+          <input type="text" id="rem-notes" class="input-field" placeholder="Focus on progressive overload">
+        </div>
+
+        <div class="section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Exercises</div>
+        <div id="rem-exercises-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+          <!-- Selected exercises + default sets in routine template injected via JS -->
+        </div>
+        
+        <button class="btn btn-primary" onclick="exerciseLibrary.openSelectModal('routine')">
+          <i data-lucide="plus"></i> Add Exercise
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success" id="rem-save-btn" onclick="routinesManager.saveRoutine()">Save Routine</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. SELECT EXERCISE DIALOG (Shared Selector) -->
+  <div class="modal-overlay" id="exercise-select-modal" style="z-index: 210;">
+    <div class="modal-content" style="max-height: 90%;">
+      <div class="modal-header">
+        <h3 class="modal-title">Select Exercises</h3>
+        <button class="btn btn-sm btn-text" onclick="modalManager.close('exercise-select-modal')">Cancel</button>
+      </div>
+      <div class="modal-body" style="padding-top: 8px;">
+        <input type="text" id="select-search" class="input-field" placeholder="Search exercises..." oninput="exerciseLibrary.filterSelectExercises()" style="margin-bottom: 12px;">
+        <div class="muscle-pill-container" id="select-muscle-filters" style="margin-bottom: 12px;">
+          <!-- Select selector pills injected via JS -->
+        </div>
+        <div id="select-exercise-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Scrollable selectable items injected via JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="select-confirm-btn" onclick="exerciseLibrary.confirmSelection()">Add Selected (<span id="select-count">0</span>)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. CUSTOM EXERCISE CREATOR DIALOG -->
+  <div class="modal-overlay" id="exercise-create-modal" style="z-index: 220;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">New Custom Exercise</h3>
+        <button class="btn btn-sm btn-text" onclick="modalManager.close('exercise-create-modal')">Cancel</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Exercise Name</label>
+          <input type="text" id="cem-name" class="input-field" placeholder="e.g. Incline Cable Press">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Muscle Group</label>
+          <select id="cem-muscle" class="input-field">
+            <option value="Chest">Chest</option>
+            <option value="Back">Back</option>
+            <option value="Shoulders">Shoulders</option>
+            <option value="Biceps">Biceps</option>
+            <option value="Triceps">Triceps</option>
+            <option value="Legs">Legs</option>
+            <option value="Core">Core</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Equipment</label>
+          <select id="cem-equipment" class="input-field">
+            <option value="Barbell">Barbell</option>
+            <option value="Dumbbell">Dumbbell</option>
+            <option value="Cable">Cable</option>
+            <option value="Machine">Machine</option>
+            <option value="Bodyweight">Bodyweight</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes (Optional)</label>
+          <input type="text" id="cem-notes" class="input-field" placeholder="Focus on range of motion">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success" onclick="exerciseLibrary.createCustomExercise()">Create Exercise</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SUCCESS CELEBRATION OVERLAY ================= -->
+  <div id="celebration-screen">
+    <div class="celebration-icon">
+      <i data-lucide="trophy"></i>
+    </div>
+    <h2 class="celebration-title">Workout Completed!</h2>
+    <p class="celebration-subtitle">Great job! You are one step closer to your fitness goals.</p>
+    
+    <div class="card" style="width: 100%; max-width: 320px; background-color: var(--card-bg-elevated); margin-bottom: 32px; border: 1.5px solid var(--success-color);">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 8px;">
+        <div style="text-align: center;">
+          <div style="font-size: 18px; font-weight: 800;" id="cel-duration">00:00</div>
+          <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase; margin-top: 4px;">Duration</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 18px; font-weight: 800;" id="cel-volume">0 lbs</div>
+          <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase; margin-top: 4px;">Total Vol</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="max-width: 200px;" onclick="workoutManager.closeCelebration()">
+      Awesome
+    </button>
+  </div>
+
+  <!-- Main Application JavaScript -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

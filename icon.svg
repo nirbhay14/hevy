@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Rounded dark background matching theme -->
+  <rect width="512" height="512" rx="128" fill="#0c0c0e"/>
+  
+  <!-- Outer glow hexagon border -->
+  <polygon points="256,40 440,146 440,366 256,472 72,366 72,146" fill="none" stroke="#0A84FF" stroke-width="16" stroke-linejoin="round" opacity="0.3"/>
+  <polygon points="256,50 422,152 422,360 256,462 90,360 90,152" fill="none" stroke="url(#accentGradient)" stroke-width="12" stroke-linejoin="round"/>
+  
+  <!-- Stylized geometric Dumbbell -->
+  <g transform="translate(256, 256) rotate(-45)">
+    <!-- Dumbbell Bar -->
+    <rect x="-110" y="-12" width="220" height="24" rx="6" fill="#ffffff" />
+    
+    <!-- Weight plates left -->
+    <rect x="-140" y="-50" width="24" height="100" rx="8" fill="url(#accentGradient)" />
+    <rect x="-170" y="-40" width="24" height="80" rx="6" fill="#ffffff" opacity="0.9" />
+    <rect x="-190" y="-30" width="16" height="60" rx="4" fill="url(#accentGradient)" />
+    
+    <!-- Weight plates right -->
+    <rect x="116" y="-50" width="24" height="100" rx="8" fill="url(#accentGradient)" />
+    <rect x="146" y="-40" width="24" height="80" rx="6" fill="#ffffff" opacity="0.9" />
+    <rect x="174" y="-30" width="16" height="60" rx="4" fill="url(#accentGradient)" />
+  </g>
+  
+  <defs>
+    <!-- Premium linear gradient -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A84FF" />
+      <stop offset="100%" stop-color="#BF5AF2" />
+    </linearGradient>
+  </defs>
+</svg>
