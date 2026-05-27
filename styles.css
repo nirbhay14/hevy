@@ -1080,3 +1080,15 @@ input:checked + .toggle-slider:before {
   transition: width 1s linear;
   width: 0;
 }
+
+/* Cloud Sync status colors */
+#sync-status-badge.connected {
+  color: var(--success-color);
+}
+#sync-status-badge.error {
+  color: var(--failure-color);
+}
+#sync-status-badge.syncing {
+  color: var(--warmup-color);
+}
+

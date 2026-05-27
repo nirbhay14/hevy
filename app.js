@@ -87,14 +87,17 @@ const modalManager = {
 const settingsManager = {
   units: 'lbs',
   defaultRestTime: 90,
+  syncUrl: '',
 
   async init() {
     this.units = await dbHelper.getSetting('units', 'lbs');
     this.defaultRestTime = parseInt(await dbHelper.getSetting('defaultRestTime', 90));
+    this.syncUrl = await dbHelper.getSetting('syncUrl', '');
     
-    // Set UI dropdown selections
+    // Set UI dropdown selections & inputs
     document.getElementById('setting-units').value = this.units;
     document.getElementById('setting-rest').value = this.defaultRestTime.toString();
+    document.getElementById('setting-sync-url').value = this.syncUrl;
   },
 
   async updateUnits(newUnit) {
@@ -106,6 +109,12 @@ const settingsManager = {
   async updateDefaultRest(newRest) {
     this.defaultRestTime = parseInt(newRest);
     await dbHelper.saveSetting('defaultRestTime', this.defaultRestTime);
+  },
+
+  async updateSyncUrl(newUrl) {
+    this.syncUrl = newUrl.trim();
+    await dbHelper.saveSetting('syncUrl', this.syncUrl);
+    syncManager.manualSync(); // Trigger initial handshake!
   },
 
   // Export DB content as a downloadable JSON file
@@ -1107,6 +1116,9 @@ const workoutManager = {
     await dbHelper.saveWorkout(workoutRecord);
     this.activeWorkout = null;
 
+    // Silent background upload to Google Sheets
+    syncManager.sync();
+
     // Reset Logger UI
     const sheet = document.getElementById('active-workout-sheet');
     sheet.classList.remove('active');
@@ -1138,9 +1150,204 @@ const workoutManager = {
 };
 
 // ==========================================
+// Metrics / Bodyweight Tracker Manager
+// ==========================================
+const metricsManager = {
+  async logWeight() {
+    const input = document.getElementById('weight-input');
+    const weightVal = parseFloat(input.value);
+    
+    if (!weightVal || weightVal <= 0) {
+      alert("Please enter a valid weight metric.");
+      return;
+    }
+    
+    const record = {
+      id: 'weight-' + Date.now(),
+      date: new Date(),
+      weight: weightVal,
+      notes: ''
+    };
+    
+    await dbHelper.saveBodyweight(record);
+    input.value = '';
+    
+    // Tactile vibration
+    if ('vibrate' in navigator) {
+      navigator.vibrate([20]);
+    }
+    
+    // Update charts & UI
+    dashboardManager.render();
+    
+    // Silent upload
+    syncManager.sync();
+  },
+  
+  async renderLastWeight() {
+    const logs = await dbHelper.getBodyweightLogs();
+    const label = document.getElementById('profile-last-weight');
+    const u = settingsManager.units;
+    
+    if (!label) return;
+    if (logs.length === 0) {
+      label.innerText = 'Last log: —';
+      return;
+    }
+    
+    const last = logs[0];
+    const dateStr = new Date(last.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    label.innerText = `Last log: ${last.weight} ${u} (${dateStr})`;
+  }
+};
+
+// ==========================================
+// Google Sheets Cloud Synchronization Engine
+// ==========================================
+const syncManager = {
+  status: 'Not Configured',
+  
+  async init() {
+    this.updateStatusBadge();
+    // Silent background push & pull on boot
+    this.sync();
+  },
+  
+  updateStatusBadge() {
+    const badge = document.getElementById('sync-status-badge');
+    if (!badge) return;
+    
+    badge.innerText = this.status;
+    badge.className = ''; // Reset classes
+    
+    if (this.status === 'Cloud Synced') {
+      badge.className = 'connected';
+    } else if (this.status === 'Syncing...') {
+      badge.className = 'syncing';
+    } else if (this.status.includes('Error') || this.status.includes('Network')) {
+      badge.className = 'error';
+    }
+  },
+  
+  async sync() {
+    const url = settingsManager.syncUrl;
+    if (!url) {
+      this.status = 'Not Configured';
+      this.updateStatusBadge();
+      return;
+    }
+    
+    // Fetch pending uploads
+    const pendingWorkouts = await dbHelper.getPendingSyncWorkouts();
+    const pendingWeights = await dbHelper.getPendingSyncBodyweight();
+    
+    if (pendingWorkouts.length === 0 && pendingWeights.length === 0) {
+      this.status = 'Cloud Synced';
+      this.updateStatusBadge();
+      return;
+    }
+    
+    this.status = 'Syncing...';
+    this.updateStatusBadge();
+    
+    const payload = {
+      action: 'sync',
+      workouts: pendingWorkouts,
+      bodyweight: pendingWeights
+    };
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      
+      const resJSON = await response.json();
+      if (resJSON && resJSON.success) {
+        // Mark as synced locally
+        await db.transaction('rw', [db.workouts, db.bodyweight], async () => {
+          for (const w of pendingWorkouts) {
+            w.syncPending = 0;
+            await db.workouts.put(w);
+          }
+          for (const log of pendingWeights) {
+            log.syncPending = 0;
+            await db.bodyweight.put(log);
+          }
+        });
+        
+        this.status = 'Cloud Synced';
+        console.log("Cloud sync completed successfully!");
+      } else {
+        this.status = 'Sync Error';
+        console.log("Apps Script returned failure:", resJSON.error);
+      }
+    } catch (err) {
+      this.status = 'Network Error';
+      console.log("Sync failed due to network:", err);
+    }
+    this.updateStatusBadge();
+  },
+  
+  async manualSync() {
+    const url = settingsManager.syncUrl;
+    if (!url) {
+      alert("Please paste a valid Google Sheets Apps Script Web App URL first!");
+      return;
+    }
+    
+    this.status = 'Syncing...';
+    this.updateStatusBadge();
+    
+    try {
+      // 1. First pull down any new logs from Google Sheets
+      const response = await fetch(url, { method: 'GET' });
+      const data = await response.json();
+      
+      if (data && data.success) {
+        // Bulk upsert pulled records locally
+        await db.transaction('rw', [db.workouts, db.bodyweight], async () => {
+          if (data.workouts && data.workouts.length) {
+            for (const w of data.workouts) {
+              w.syncPending = 0;
+              w.startTime = new Date(w.startTime);
+              w.endTime = new Date(w.endTime);
+              await db.workouts.put(w);
+            }
+          }
+          if (data.bodyweight && data.bodyweight.length) {
+            for (const log of data.bodyweight) {
+              log.syncPending = 0;
+              log.date = new Date(log.date);
+              await db.bodyweight.put(log);
+            }
+          }
+        });
+      }
+      
+      // 2. Upload any local pending items to cloud
+      await this.sync();
+      
+      alert("Cloud synchronization completed successfully!");
+      // Redraw analytics
+      dashboardManager.render();
+      historyManager.render();
+    } catch (err) {
+      this.status = 'Sync Error';
+      this.updateStatusBadge();
+      alert("Failed to complete cloud synchronization. Please verify your Web App URL and internet connection. " + err.message);
+    }
+  }
+};
+
+// ==========================================
 // Profile Dashboard Calculator Engine
 // ==========================================
 const dashboardManager = {
+  volumeChartInstance: null,
+  weightChartInstance: null,
+
   async render() {
     const workouts = await dbHelper.getWorkouts();
     const u = settingsManager.units;
@@ -1161,6 +1368,12 @@ const dashboardManager = {
 
     this.calculateStreak(workouts);
     this.renderFrequencyGrid(workouts);
+    
+    // Metrics last weight logged
+    await metricsManager.renderLastWeight();
+    
+    // Visual Charts Rendering
+    this.renderCharts(workouts);
   },
 
   calculateStreak(workouts) {
@@ -1171,11 +1384,9 @@ const dashboardManager = {
     }
 
     // Simplistic Streak Check (Number of consecutive weeks with at least 1 workout)
-    // Find active weeks
     const weeksSet = new Set();
     workouts.forEach(w => {
       const d = new Date(w.startTime);
-      // Calculate first day of year + week number
       const oneJan = new Date(d.getFullYear(), 0, 1);
       const numberOfDays = Math.floor((d - oneJan) / (24 * 60 * 60 * 1000));
       const weekNum = Math.ceil((d.getDay() + 1 + numberOfDays) / 7);
@@ -1228,6 +1439,153 @@ const dashboardManager = {
       el.innerText = dot.num;
       container.appendChild(el);
     });
+  },
+
+  async renderCharts(workouts) {
+    const u = settingsManager.units;
+    const bodyweightLogs = await dbHelper.getBodyweightLogs();
+
+    // 1. LIFTING VOLUME PROGRESS CHART
+    const volCtx = document.getElementById('volumeChart');
+    if (volCtx) {
+      if (this.volumeChartInstance) this.volumeChartInstance.destroy();
+
+      // Group volume by week for the last 6 weeks
+      const weeklyData = {};
+      const labels = [];
+      const volumes = [];
+
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - (i * 7));
+        const first = d.getDate() - d.getDay();
+        const startOfWeek = new Date(d.setDate(first));
+        const weekKey = startOfWeek.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        
+        weeklyData[weekKey] = 0;
+        labels.push(weekKey);
+      }
+
+      workouts.forEach(w => {
+        const wDate = new Date(w.startTime);
+        for (let j = 0; j < labels.length; j++) {
+          const label = labels[j];
+          const currYear = new Date().getFullYear();
+          const start = new Date(label + ", " + currYear);
+          const end = new Date(start);
+          end.setDate(start.getDate() + 7);
+          
+          if (wDate >= start && wDate < end) {
+            weeklyData[label] += w.totalVolume;
+            break;
+          }
+        }
+      });
+
+      labels.forEach(label => {
+        volumes.push(weeklyData[label]);
+      });
+
+      this.volumeChartInstance = new Chart(volCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: `Volume (${u})`,
+            data: volumes,
+            backgroundColor: 'rgba(10, 132, 255, 0.45)',
+            borderColor: '#0A84FF',
+            borderWidth: 2,
+            borderRadius: 6,
+            hoverBackgroundColor: '#0A84FF'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+            },
+            y: {
+              grid: { color: '#24242b' },
+              ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // 2. BODYWEIGHT ANALYTICS LINE CHART
+    const weightCtx = document.getElementById('weightChart');
+    if (weightCtx) {
+      if (this.weightChartInstance) this.weightChartInstance.destroy();
+
+      if (bodyweightLogs.length === 0) {
+        // Render simple placeholder text inside canvas wrapper
+        const canvas = document.getElementById('weightChart');
+        if (canvas) canvas.style.display = 'none';
+        
+        let placeholder = document.getElementById('weight-chart-placeholder');
+        if (!placeholder) {
+          placeholder = document.createElement('div');
+          placeholder.id = 'weight-chart-placeholder';
+          placeholder.style.cssText = 'text-align: center; color: var(--text-muted); padding-top: 60px; font-size: 12px; position: absolute; width:100%; top:0;';
+          placeholder.innerText = 'Log weight logs to chart your body metrics progress!';
+          weightCtx.parentElement.appendChild(placeholder);
+        }
+        return;
+      }
+
+      // Restore elements if previously hidden
+      const canvas = document.getElementById('weightChart');
+      if (canvas) canvas.style.display = 'block';
+      const placeholder = document.getElementById('weight-chart-placeholder');
+      if (placeholder) placeholder.remove();
+
+      const sortedLogs = [...bodyweightLogs].reverse().slice(-8); // Chronological order, last 8 points
+      const weightLabels = sortedLogs.map(log => new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+      const weightValues = sortedLogs.map(log => log.weight);
+
+      this.weightChartInstance = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: weightLabels,
+          datasets: [{
+            label: `Weight (${u})`,
+            data: weightValues,
+            borderColor: '#BF5AF2',
+            backgroundColor: 'rgba(191, 90, 242, 0.1)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 3,
+            pointBackgroundColor: '#BF5AF2',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+            },
+            y: {
+              grid: { color: '#24242b' },
+              ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+            }
+          }
+        }
+      });
+    }
   }
 };
 
@@ -1369,7 +1727,10 @@ async function initApplication() {
   // 3. Fire SPA Router Initial State
   router.init();
 
-  // 4. Initialise custom icons
+  // 4. Initialise sync database handshake
+  await syncManager.init();
+
+  // 5. Initialise custom icons
   lucide.createIcons();
 }
 

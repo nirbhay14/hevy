@@ -9,6 +9,14 @@ db.version(1).stores({
   settings: 'key'
 });
 
+db.version(2).stores({
+  exercises: 'id, name, muscleGroup, equipment, isCustom',
+  routines: 'id, name, notes',
+  workouts: 'id, name, startTime, endTime, duration, totalVolume, totalSets, syncPending',
+  bodyweight: 'id, date, weight, notes, syncPending',
+  settings: 'key'
+});
+
 // Default exercise list to pre-populate
 const DEFAULT_EXERCISES = [
   // Chest
@@ -147,11 +155,37 @@ const dbHelper = {
     if (!workout.id) {
       workout.id = 'workout-' + Date.now();
     }
+    workout.syncPending = workout.syncPending !== undefined ? workout.syncPending : 1;
     await db.workouts.put(workout);
     return workout;
   },
   async deleteWorkout(id) {
     await db.workouts.delete(id);
+  },
+
+  // Bodyweight (Metrics)
+  async getBodyweightLogs() {
+    const logs = await db.bodyweight.toArray();
+    return logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+  },
+  async saveBodyweight(record) {
+    if (!record.id) {
+      record.id = 'weight-' + Date.now();
+    }
+    record.syncPending = record.syncPending !== undefined ? record.syncPending : 1;
+    await db.bodyweight.put(record);
+    return record;
+  },
+  async deleteBodyweight(id) {
+    await db.bodyweight.delete(id);
+  },
+
+  // Sync Pending Fetch Helpers
+  async getPendingSyncWorkouts() {
+    return await db.workouts.where('syncPending').equals(1).toArray();
+  },
+  async getPendingSyncBodyweight() {
+    return await db.bodyweight.where('syncPending').equals(1).toArray();
   },
 
   // Settings
@@ -168,25 +202,27 @@ const dbHelper = {
     const exercises = await db.exercises.toArray();
     const routines = await db.routines.toArray();
     const workouts = await db.workouts.toArray();
+    const bodyweight = await db.bodyweight.toArray();
     const settings = await db.settings.toArray();
     
     return {
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       exercises,
       routines,
       workouts,
+      bodyweight,
       settings
     };
   },
   
   async importBackup(data) {
-    if (!data || data.version !== 1) {
+    if (!data || (data.version !== 1 && data.version !== 2)) {
       throw new Error("Invalid backup format");
     }
     
     // Clear and restore tables
-    await db.transaction('rw', [db.exercises, db.routines, db.workouts, db.settings], async () => {
+    await db.transaction('rw', [db.exercises, db.routines, db.workouts, db.bodyweight, db.settings], async () => {
       if (data.exercises && data.exercises.length) {
         await db.exercises.clear();
         await db.exercises.bulkAdd(data.exercises);
@@ -198,6 +234,10 @@ const dbHelper = {
       if (data.workouts) {
         await db.workouts.clear();
         if (data.workouts.length) await db.workouts.bulkAdd(data.workouts);
+      }
+      if (data.bodyweight) {
+        await db.bodyweight.clear();
+        if (data.bodyweight.length) await db.bodyweight.bulkAdd(data.bodyweight);
       }
       if (data.settings) {
         await db.settings.clear();
