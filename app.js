@@ -179,7 +179,7 @@ const exerciseLibrary = {
   },
 
   renderMuscleFilters() {
-    const muscles = ['All', 'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core'];
+    const muscles = ['All', 'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'];
     const container = document.getElementById('muscle-filters');
     container.innerHTML = muscles.map(m => `
       <div class="muscle-pill ${this.selectedMuscle === m ? 'active' : ''}" onclick="exerciseLibrary.setMuscleFilter('${m}')">${m}</div>
@@ -346,7 +346,7 @@ const exerciseLibrary = {
   },
 
   renderSelectMuscleFilters() {
-    const muscles = ['All', 'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core'];
+    const muscles = ['All', 'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'];
     const container = document.getElementById('select-muscle-filters');
     container.innerHTML = muscles.map(m => `
       <div class="muscle-pill ${this.selectedMuscle === m ? 'active' : ''}" onclick="exerciseLibrary.setSelectMuscleFilter('${m}')">${m}</div>
@@ -387,18 +387,21 @@ const exerciseLibrary = {
   },
 
   toggleSelectChoice(exerciseId, element) {
-    if (this.chosenExerciseIds.has(exerciseId)) {
+    const isSelected = this.chosenExerciseIds.has(exerciseId);
+    const icon = element.querySelector('i, svg');
+    
+    if (isSelected) {
       this.chosenExerciseIds.delete(exerciseId);
       element.classList.remove('selected');
-      const icon = element.querySelector('i');
-      icon.setAttribute('data-lucide', 'circle');
-      icon.style.color = 'var(--text-muted)';
+      if (icon) {
+        icon.outerHTML = `<i data-lucide="circle" style="color: var(--text-muted); width: 20px;"></i>`;
+      }
     } else {
       this.chosenExerciseIds.add(exerciseId);
       element.classList.add('selected');
-      const icon = element.querySelector('i');
-      icon.setAttribute('data-lucide', 'check-circle-2');
-      icon.style.color = 'var(--accent-color)';
+      if (icon) {
+        icon.outerHTML = `<i data-lucide="check-circle-2" style="color: var(--accent-color); width: 20px;"></i>`;
+      }
     }
     document.getElementById('select-count').innerText = this.chosenExerciseIds.size.toString();
     lucide.createIcons();
