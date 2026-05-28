@@ -176,88 +176,179 @@ db.on("populate", () => {
 const dbHelper = {
   // Exercises
   async getExercises() {
-    let list = await db.exercises.toArray();
-    // Check if any DEFAULT_EXERCISES are missing (e.g. if new defaults are added)
-    const missing = DEFAULT_EXERCISES.filter(d => !list.some(existing => existing.id === d.id));
-    if (missing.length > 0) {
-      console.log(`Seeding ${missing.length} missing default exercises...`);
-      await db.exercises.bulkAdd(missing);
-      list = await db.exercises.toArray();
+    try {
+      let list = await db.exercises.toArray();
+      // Check if any DEFAULT_EXERCISES are missing (e.g. if new defaults are added)
+      const missing = DEFAULT_EXERCISES.filter(d => !list.some(existing => existing.id === d.id));
+      if (missing.length > 0) {
+        console.log(`Seeding ${missing.length} missing default exercises...`);
+        try {
+          await db.exercises.bulkAdd(missing);
+        } catch (e) {
+          console.warn("Exercise bulkAdd constraint warning, adding individually:", e);
+          for (const item of missing) {
+            try {
+              await db.exercises.put(item);
+            } catch (err) { /* ignore duplicate */ }
+          }
+        }
+        list = await db.exercises.toArray();
+      }
+      return list;
+    } catch (err) {
+      console.error("Failed to load exercises from IndexedDB, falling back to memory:", err);
+      return DEFAULT_EXERCISES;
     }
-    return list;
   },
   async addCustomExercise(name, muscleGroup, equipment, notes = '') {
     const id = 'custom-' + Date.now();
     const newEx = { id, name, muscleGroup, equipment, isCustom: true, notes };
-    await db.exercises.add(newEx);
+    try {
+      await db.exercises.add(newEx);
+    } catch (err) {
+      console.error("Failed to save custom exercise:", err);
+    }
     return newEx;
   },
   
   // Routines
   async getRoutines() {
-    return await db.routines.toArray();
+    try {
+      return await db.routines.toArray();
+    } catch (err) {
+      console.error("Failed to fetch routines:", err);
+      return [];
+    }
   },
   async saveRoutine(routine) {
     if (!routine.id) {
       routine.id = 'routine-' + Date.now();
     }
-    await db.routines.put(routine);
+    try {
+      await db.routines.put(routine);
+    } catch (err) {
+      console.error("Failed to save routine:", err);
+    }
     return routine;
   },
   async deleteRoutine(id) {
-    await db.routines.delete(id);
+    try {
+      await db.routines.delete(id);
+    } catch (err) {
+      console.error("Failed to delete routine:", err);
+    }
   },
 
   // Workouts (History)
   async getWorkouts() {
-    // Sort workouts by startTime descending
-    const workouts = await db.workouts.toArray();
-    return workouts.sort((a, b) => b.startTime - a.startTime);
+    try {
+      const workouts = await db.workouts.toArray();
+      return workouts.sort((a, b) => b.startTime - a.startTime);
+    } catch (err) {
+      console.error("Failed to fetch workouts:", err);
+      return [];
+    }
   },
   async saveWorkout(workout) {
     if (!workout.id) {
       workout.id = 'workout-' + Date.now();
     }
     workout.syncPending = workout.syncPending !== undefined ? workout.syncPending : 1;
-    await db.workouts.put(workout);
+    try {
+      await db.workouts.put(workout);
+    } catch (err) {
+      console.error("Failed to save workout:", err);
+    }
     return workout;
   },
   async deleteWorkout(id) {
-    await db.workouts.delete(id);
+    try {
+      await db.workouts.delete(id);
+    } catch (err) {
+      console.error("Failed to delete workout:", err);
+    }
   },
 
   // Bodyweight (Metrics)
   async getBodyweightLogs() {
-    const logs = await db.bodyweight.toArray();
-    return logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+    try {
+      const logs = await db.bodyweight.toArray();
+      return logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+    } catch (err) {
+      console.error("Failed to fetch bodyweight logs:", err);
+      return [];
+    }
   },
   async saveBodyweight(record) {
     if (!record.id) {
       record.id = 'weight-' + Date.now();
     }
     record.syncPending = record.syncPending !== undefined ? record.syncPending : 1;
-    await db.bodyweight.put(record);
+    try {
+      await db.bodyweight.put(record);
+    } catch (err) {
+      console.error("Failed to save bodyweight log:", err);
+    }
     return record;
   },
   async deleteBodyweight(id) {
-    await db.bodyweight.delete(id);
+    try {
+      await db.bodyweight.delete(id);
+    } catch (err) {
+      console.error("Failed to delete bodyweight log:", err);
+    }
   },
 
   // Sync Pending Fetch Helpers
   async getPendingSyncWorkouts() {
-    return await db.workouts.where('syncPending').equals(1).toArray();
+    try {
+      return await db.workouts.where('syncPending').equals(1).toArray();
+    } catch (err) {
+      return [];
+    }
   },
   async getPendingSyncBodyweight() {
-    return await db.bodyweight.where('syncPending').equals(1).toArray();
+    try {
+      return await db.bodyweight.where('syncPending').equals(1).toArray();
+    } catch (err) {
+      return [];
+    }
   },
 
-  // Settings
+  // Settings - Dual Storage (localStorage + IndexedDB)
   async getSetting(key, defaultValue) {
-    const item = await db.settings.get(key);
-    return item ? item.value : defaultValue;
+    try {
+      // 1. Read from localStorage for instant, bulletproof access
+      const localVal = localStorage.getItem('hevy_setting_' + key);
+      if (localVal !== null) {
+        return localVal;
+      }
+      
+      // 2. Fallback to IndexedDB settings store
+      const item = await db.settings.get(key);
+      if (item) {
+        localStorage.setItem('hevy_setting_' + key, item.value.toString());
+        return item.value;
+      }
+    } catch (err) {
+      console.warn("IndexedDB settings retrieval failed, checking localStorage:", err);
+      try {
+        const localVal = localStorage.getItem('hevy_setting_' + key);
+        if (localVal !== null) return localVal;
+      } catch (e) { /* Storage blocked entirely */ }
+    }
+    return defaultValue;
   },
   async saveSetting(key, value) {
-    await db.settings.put({ key, value });
+    try {
+      // 1. Write to localStorage instantly
+      localStorage.setItem('hevy_setting_' + key, value.toString());
+      
+      // 2. Parallel write to IndexedDB settings store
+      await db.settings.put({ key, value });
+    } catch (err) {
+      console.warn("IndexedDB settings save failed, saved to localStorage only:", err);
+    }
   },
   
   // Database backup operations
