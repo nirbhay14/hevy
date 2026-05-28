@@ -1243,6 +1243,88 @@ const metricsManager = {
     const last = logs[0];
     const dateStr = new Date(last.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     label.innerText = `Last log: ${last.weight} ${u} (${dateStr})`;
+  },
+
+  async logCalories() {
+    const input = document.getElementById('calories-input');
+    const calorieVal = parseInt(input.value);
+    
+    if (!calorieVal || calorieVal <= 0) {
+      alert("Please enter a valid daily calorie number.");
+      return;
+    }
+    
+    const record = {
+      id: 'nutrition-' + Date.now(),
+      date: new Date(),
+      calories: calorieVal
+    };
+    
+    await dbHelper.saveNutrition(record);
+    input.value = '';
+    
+    if ('vibrate' in navigator) {
+      navigator.vibrate([20]);
+    }
+    
+    dashboardManager.render();
+    syncManager.sync();
+  },
+  
+  async renderLastCalories() {
+    const logs = await dbHelper.getNutritionLogs();
+    const label = document.getElementById('profile-last-calories');
+    
+    if (!label) return;
+    if (logs.length === 0) {
+      label.innerText = 'Last log: —';
+      return;
+    }
+    
+    const last = logs[0];
+    const dateStr = new Date(last.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    label.innerText = `Last log: ${last.calories} kcal (${dateStr})`;
+  },
+
+  async logBodyfat() {
+    const input = document.getElementById('bodyfat-input');
+    const bodyfatVal = parseFloat(input.value);
+    
+    if (!bodyfatVal || bodyfatVal <= 0 || bodyfatVal > 100) {
+      alert("Please enter a valid body fat percentage (0-100).");
+      return;
+    }
+    
+    const record = {
+      id: 'bodyfat-' + Date.now(),
+      date: new Date(),
+      fatPercent: bodyfatVal
+    };
+    
+    await dbHelper.saveBodyfat(record);
+    input.value = '';
+    
+    if ('vibrate' in navigator) {
+      navigator.vibrate([20]);
+    }
+    
+    dashboardManager.render();
+    syncManager.sync();
+  },
+  
+  async renderLastBodyfat() {
+    const logs = await dbHelper.getBodyfatLogs();
+    const label = document.getElementById('profile-last-bodyfat');
+    
+    if (!label) return;
+    if (logs.length === 0) {
+      label.innerText = 'Last log: —';
+      return;
+    }
+    
+    const last = logs[0];
+    const dateStr = new Date(last.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    label.innerText = `Last log: ${last.fatPercent}% (${dateStr})`;
   }
 };
 
@@ -1285,8 +1367,10 @@ const syncManager = {
     // Fetch pending uploads
     const pendingWorkouts = await dbHelper.getPendingSyncWorkouts();
     const pendingWeights = await dbHelper.getPendingSyncBodyweight();
+    const pendingCalories = await dbHelper.getPendingSyncNutrition();
+    const pendingBodyfat = await dbHelper.getPendingSyncBodyfat();
     
-    if (pendingWorkouts.length === 0 && pendingWeights.length === 0) {
+    if (pendingWorkouts.length === 0 && pendingWeights.length === 0 && pendingCalories.length === 0 && pendingBodyfat.length === 0) {
       this.status = 'Cloud Synced';
       this.updateStatusBadge();
       return;
@@ -1298,7 +1382,9 @@ const syncManager = {
     const payload = {
       action: 'sync',
       workouts: pendingWorkouts,
-      bodyweight: pendingWeights
+      bodyweight: pendingWeights,
+      nutrition: pendingCalories,
+      bodyfat: pendingBodyfat
     };
     
     try {
@@ -1312,7 +1398,7 @@ const syncManager = {
       const resJSON = await response.json();
       if (resJSON && resJSON.success) {
         // Mark as synced locally
-        await db.transaction('rw', [db.workouts, db.bodyweight], async () => {
+        await db.transaction('rw', [db.workouts, db.bodyweight, db.nutrition, db.bodyfat], async () => {
           for (const w of pendingWorkouts) {
             w.syncPending = 0;
             await db.workouts.put(w);
@@ -1320,6 +1406,14 @@ const syncManager = {
           for (const log of pendingWeights) {
             log.syncPending = 0;
             await db.bodyweight.put(log);
+          }
+          for (const log of pendingCalories) {
+            log.syncPending = 0;
+            await db.nutrition.put(log);
+          }
+          for (const log of pendingBodyfat) {
+            log.syncPending = 0;
+            await db.bodyfat.put(log);
           }
         });
         
@@ -1356,7 +1450,7 @@ const syncManager = {
       
       if (data && data.success) {
         // Bulk upsert pulled records locally
-        await db.transaction('rw', [db.workouts, db.bodyweight], async () => {
+        await db.transaction('rw', [db.workouts, db.bodyweight, db.nutrition, db.bodyfat], async () => {
           if (data.workouts && data.workouts.length) {
             for (const w of data.workouts) {
               w.syncPending = 0;
@@ -1370,6 +1464,20 @@ const syncManager = {
               log.syncPending = 0;
               log.date = new Date(log.date);
               await db.bodyweight.put(log);
+            }
+          }
+          if (data.nutrition && data.nutrition.length) {
+            for (const log of data.nutrition) {
+              log.syncPending = 0;
+              log.date = new Date(log.date);
+              await db.nutrition.put(log);
+            }
+          }
+          if (data.bodyfat && data.bodyfat.length) {
+            for (const log of data.bodyfat) {
+              log.syncPending = 0;
+              log.date = new Date(log.date);
+              await db.bodyfat.put(log);
             }
           }
         });
@@ -1417,6 +1525,8 @@ function getGreeting() {
 const dashboardManager = {
   volumeChartInstance: null,
   weightChartInstance: null,
+  caloriesChartInstance: null,
+  bodyfatChartInstance: null,
 
   async render() {
     const workouts = await dbHelper.getWorkouts();
@@ -1446,8 +1556,10 @@ const dashboardManager = {
       greetingEl.innerHTML = `${greeting.text}! <span style="font-size: 13px; font-weight:500; display:block; color:var(--text-secondary); margin-top:4px;">"${greeting.quote}"</span>`;
     }
     
-    // Metrics last weight logged
+    // Metrics last weight, calories, bodyfat logged
     await metricsManager.renderLastWeight();
+    await metricsManager.renderLastCalories();
+    await metricsManager.renderLastBodyfat();
     
     // Visual Charts Rendering
     this.renderCharts(workouts);
@@ -1627,53 +1739,197 @@ const dashboardManager = {
           placeholder.innerText = 'Log weight logs to chart your body metrics progress!';
           weightCtx.parentElement.appendChild(placeholder);
         }
-        return;
-      }
+      } else {
+        // Restore elements if previously hidden
+        const canvas = document.getElementById('weightChart');
+        if (canvas) canvas.style.display = 'block';
+        const placeholder = document.getElementById('weight-chart-placeholder');
+        if (placeholder) placeholder.remove();
 
-      // Restore elements if previously hidden
-      const canvas = document.getElementById('weightChart');
-      if (canvas) canvas.style.display = 'block';
-      const placeholder = document.getElementById('weight-chart-placeholder');
-      if (placeholder) placeholder.remove();
+        const sortedLogs = [...bodyweightLogs].reverse().slice(-8); // Chronological order, last 8 points
+        const weightLabels = sortedLogs.map(log => new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+        const weightValues = sortedLogs.map(log => log.weight);
 
-      const sortedLogs = [...bodyweightLogs].reverse().slice(-8); // Chronological order, last 8 points
-      const weightLabels = sortedLogs.map(log => new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
-      const weightValues = sortedLogs.map(log => log.weight);
-
-      this.weightChartInstance = new Chart(canvas, {
-        type: 'line',
-        data: {
-          labels: weightLabels,
-          datasets: [{
-            label: `Weight (${u})`,
-            data: weightValues,
-            borderColor: '#BF5AF2',
-            backgroundColor: 'rgba(191, 90, 242, 0.1)',
-            fill: true,
-            tension: 0.35,
-            borderWidth: 3,
-            pointBackgroundColor: '#BF5AF2',
-            pointRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
+        this.weightChartInstance = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels: weightLabels,
+            datasets: [{
+              label: `Weight (${u})`,
+              data: weightValues,
+              borderColor: '#BF5AF2',
+              backgroundColor: 'rgba(191, 90, 242, 0.1)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 3,
+              pointBackgroundColor: '#BF5AF2',
+              pointRadius: 4
+            }]
           },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
             },
-            y: {
-              grid: { color: '#24242b' },
-              ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+              },
+              y: {
+                grid: { color: '#24242b' },
+                ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+              }
             }
           }
+        });
+      }
+    }
+
+    // 3. CALORIES INTAKE BAR CHART
+    const caloriesCtx = document.getElementById('caloriesChart');
+    if (caloriesCtx) {
+      if (this.caloriesChartInstance) this.caloriesChartInstance.destroy();
+
+      const calorieLogs = await dbHelper.getNutritionLogs();
+
+      if (calorieLogs.length === 0) {
+        const canvas = document.getElementById('caloriesChart');
+        if (canvas) canvas.style.display = 'none';
+        
+        let placeholder = document.getElementById('calories-chart-placeholder');
+        if (!placeholder) {
+          placeholder = document.createElement('div');
+          placeholder.id = 'calories-chart-placeholder';
+          placeholder.style.cssText = 'text-align: center; color: var(--text-muted); padding-top: 60px; font-size: 12px; position: absolute; width:100%; top:0;';
+          placeholder.innerText = 'Log daily calorie logs to chart your nutrition progress!';
+          caloriesCtx.parentElement.appendChild(placeholder);
         }
-      });
+      } else {
+        const canvas = document.getElementById('caloriesChart');
+        if (canvas) canvas.style.display = 'block';
+        const placeholder = document.getElementById('calories-chart-placeholder');
+        if (placeholder) placeholder.remove();
+
+        const labels = [];
+        const calorieValues = [];
+        
+        const logMap = {};
+        calorieLogs.forEach(log => {
+          const dateStr = new Date(log.date).toDateString();
+          logMap[dateStr] = (logMap[dateStr] || 0) + log.calories;
+        });
+
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const label = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+          labels.push(label);
+          
+          const val = logMap[d.toDateString()] || 0;
+          calorieValues.push(val);
+        }
+
+        this.caloriesChartInstance = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Calories (kcal)',
+              data: calorieValues,
+              backgroundColor: 'rgba(255, 149, 0, 0.45)', // Amber/Orange gold
+              borderColor: '#FF9500',
+              borderWidth: 2,
+              borderRadius: 6,
+              hoverBackgroundColor: '#FF9500'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+              },
+              y: {
+                grid: { color: '#24242b' },
+                ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // 4. BODY FAT TREND LINE CHART
+    const bodyfatCtx = document.getElementById('bodyfatChart');
+    if (bodyfatCtx) {
+      if (this.bodyfatChartInstance) this.bodyfatChartInstance.destroy();
+
+      const bodyfatLogs = await dbHelper.getBodyfatLogs();
+
+      if (bodyfatLogs.length === 0) {
+        const canvas = document.getElementById('bodyfatChart');
+        if (canvas) canvas.style.display = 'none';
+        
+        let placeholder = document.getElementById('bodyfat-chart-placeholder');
+        if (!placeholder) {
+          placeholder = document.createElement('div');
+          placeholder.id = 'bodyfat-chart-placeholder';
+          placeholder.style.cssText = 'text-align: center; color: var(--text-muted); padding-top: 60px; font-size: 12px; position: absolute; width:100%; top:0;';
+          placeholder.innerText = 'Log body fat percentage to chart your trend!';
+          bodyfatCtx.parentElement.appendChild(placeholder);
+        }
+      } else {
+        const canvas = document.getElementById('bodyfatChart');
+        if (canvas) canvas.style.display = 'block';
+        const placeholder = document.getElementById('bodyfat-chart-placeholder');
+        if (placeholder) placeholder.remove();
+
+        const sortedLogs = [...bodyfatLogs].reverse().slice(-8); // Chronological, last 8 points
+        const bodyfatLabels = sortedLogs.map(log => new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+        const bodyfatValues = sortedLogs.map(log => log.fatPercent);
+
+        this.bodyfatChartInstance = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels: bodyfatLabels,
+            datasets: [{
+              label: 'Body Fat %',
+              data: bodyfatValues,
+              borderColor: '#30D158', // Sleek green
+              backgroundColor: 'rgba(48, 209, 88, 0.1)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 3,
+              pointBackgroundColor: '#30D158',
+              pointRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+              },
+              y: {
+                grid: { color: '#24242b' },
+                ticks: { color: '#a0a0ab', font: { family: 'Inter', size: 10 } }
+              }
+            }
+          }
+        });
+      }
     }
   }
 };

@@ -17,6 +17,16 @@ db.version(2).stores({
   settings: 'key'
 });
 
+db.version(3).stores({
+  exercises: 'id, name, muscleGroup, equipment, isCustom',
+  routines: 'id, name, notes',
+  workouts: 'id, name, startTime, endTime, duration, totalVolume, totalSets, syncPending',
+  bodyweight: 'id, date, weight, notes, syncPending',
+  nutrition: 'id, date, calories, syncPending',
+  bodyfat: 'id, date, fatPercent, syncPending',
+  settings: 'key'
+});
+
 // Default exercise list to pre-populate
 const DEFAULT_EXERCISES = [
   // Chest
@@ -315,6 +325,82 @@ const dbHelper = {
     }
   },
 
+  // Nutrition (Calories)
+  async getNutritionLogs() {
+    try {
+      const logs = await db.nutrition.toArray();
+      return logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+    } catch (err) {
+      console.error("Failed to fetch nutrition logs:", err);
+      return [];
+    }
+  },
+  async saveNutrition(record) {
+    if (!record.id) {
+      record.id = 'nutrition-' + Date.now();
+    }
+    record.syncPending = record.syncPending !== undefined ? record.syncPending : 1;
+    try {
+      await db.nutrition.put(record);
+    } catch (err) {
+      console.error("Failed to save nutrition log:", err);
+    }
+    return record;
+  },
+  async deleteNutrition(id) {
+    try {
+      await db.nutrition.delete(id);
+    } catch (err) {
+      console.error("Failed to delete nutrition log:", err);
+    }
+  },
+
+  // Body Fat
+  async getBodyfatLogs() {
+    try {
+      const logs = await db.bodyfat.toArray();
+      return logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+    } catch (err) {
+      console.error("Failed to fetch bodyfat logs:", err);
+      return [];
+    }
+  },
+  async saveBodyfat(record) {
+    if (!record.id) {
+      record.id = 'bodyfat-' + Date.now();
+    }
+    record.syncPending = record.syncPending !== undefined ? record.syncPending : 1;
+    try {
+      await db.bodyfat.put(record);
+    } catch (err) {
+      console.error("Failed to save bodyfat log:", err);
+    }
+    return record;
+  },
+  async deleteBodyfat(id) {
+    try {
+      await db.bodyfat.delete(id);
+    } catch (err) {
+      console.error("Failed to delete bodyfat log:", err);
+    }
+  },
+
+  // Pending Sync Helpers for Nutrition & Bodyfat
+  async getPendingSyncNutrition() {
+    try {
+      return await db.nutrition.where('syncPending').equals(1).toArray();
+    } catch (err) {
+      return [];
+    }
+  },
+  async getPendingSyncBodyfat() {
+    try {
+      return await db.bodyfat.where('syncPending').equals(1).toArray();
+    } catch (err) {
+      return [];
+    }
+  },
+
   // Settings - Dual Storage (localStorage + IndexedDB)
   async getSetting(key, defaultValue) {
     try {
@@ -357,26 +443,30 @@ const dbHelper = {
     const routines = await db.routines.toArray();
     const workouts = await db.workouts.toArray();
     const bodyweight = await db.bodyweight.toArray();
+    const nutrition = await db.nutrition.toArray();
+    const bodyfat = await db.bodyfat.toArray();
     const settings = await db.settings.toArray();
     
     return {
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       exercises,
       routines,
       workouts,
       bodyweight,
+      nutrition,
+      bodyfat,
       settings
     };
   },
   
   async importBackup(data) {
-    if (!data || (data.version !== 1 && data.version !== 2)) {
+    if (!data || (data.version !== 1 && data.version !== 2 && data.version !== 3)) {
       throw new Error("Invalid backup format");
     }
     
     // Clear and restore tables
-    await db.transaction('rw', [db.exercises, db.routines, db.workouts, db.bodyweight, db.settings], async () => {
+    await db.transaction('rw', [db.exercises, db.routines, db.workouts, db.bodyweight, db.nutrition, db.bodyfat, db.settings], async () => {
       if (data.exercises && data.exercises.length) {
         await db.exercises.clear();
         await db.exercises.bulkAdd(data.exercises);
@@ -392,6 +482,14 @@ const dbHelper = {
       if (data.bodyweight) {
         await db.bodyweight.clear();
         if (data.bodyweight.length) await db.bodyweight.bulkAdd(data.bodyweight);
+      }
+      if (data.nutrition) {
+        await db.nutrition.clear();
+        if (data.nutrition.length) await db.nutrition.bulkAdd(data.nutrition);
+      }
+      if (data.bodyfat) {
+        await db.bodyfat.clear();
+        if (data.bodyfat.length) await db.bodyfat.bulkAdd(data.bodyfat);
       }
       if (data.settings) {
         await db.settings.clear();

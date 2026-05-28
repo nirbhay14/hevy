@@ -1,21 +1,11 @@
 /**
- * Hevy PWA Google Apps Script Sync Engine
+ * Hevy PWA Google Apps Script Sync Engine (Version 2)
  * 
  * INSTRUCTIONS:
- * 1. Go to Google Drive (https://drive.google.com).
- * 2. Create a new Google Sheet named "Hevy Database".
- * 3. In the Google Sheet, go to Extensions > Apps Script in the top menu.
- * 4. Clear any existing code in the editor, and paste this entire script.
- * 5. Click Save (the floppy disk icon) or press Cmd+S / Ctrl+S.
- * 6. Click "Deploy" (blue button in top right) > "New deployment".
- * 7. Click the gear icon next to "Select type" and select "Web app".
- * 8. Set the configuration as follows:
- *    - Description: Hevy Sync API
- *    - Execute as: "Me" (your-email@gmail.com)
- *    - Who has access: "Anyone" (This is required so your phone can send data securely).
- * 9. Click "Deploy".
- * 10. Copy the generated "Web app URL" (it will end in "/exec") and paste it into the 
- *     Cloud Sync Settings inside your Hevy app!
+ * 1. Open your browser and go to your "Hevy Database" Google Sheet.
+ * 2. Go to Extensions > Apps Script in the top menu.
+ * 3. Clear any existing code, and paste this entire script.
+ * 4. Save and Redeploy: Deploy > Manage deployments > Edit > Version: New version > Deploy.
  */
 
 function setupDatabase() {
@@ -39,6 +29,26 @@ function setupDatabase() {
     weightSheet.appendRow(["Log ID", "Date", "Weight", "Notes"]);
     weightSheet.getRange(1, 1, 1, 4).setFontWeight("bold").setBackground("#0c0c0e").setFontColor("#ffffff");
     weightSheet.setFrozenRows(1);
+  }
+  
+  // 3. Create Calories Sheet if it doesn't exist
+  let caloriesSheet = ss.getSheetByName("Calories");
+  if (!caloriesSheet) {
+    caloriesSheet = ss.insertSheet("Calories");
+    // Write Headers
+    caloriesSheet.appendRow(["Log ID", "Date", "Calories"]);
+    caloriesSheet.getRange(1, 1, 1, 3).setFontWeight("bold").setBackground("#0c0c0e").setFontColor("#ffffff");
+    caloriesSheet.setFrozenRows(1);
+  }
+  
+  // 4. Create BodyFat Sheet if it doesn't exist
+  let bodyfatSheet = ss.getSheetByName("BodyFat");
+  if (!bodyfatSheet) {
+    bodyfatSheet = ss.insertSheet("BodyFat");
+    // Write Headers
+    bodyfatSheet.appendRow(["Log ID", "Date", "Body Fat %"]);
+    bodyfatSheet.getRange(1, 1, 1, 3).setFontWeight("bold").setBackground("#0c0c0e").setFontColor("#ffffff");
+    bodyfatSheet.setFrozenRows(1);
   }
 }
 
@@ -64,9 +74,7 @@ function doGet(e) {
         totalSets: parseInt(row[5]) || 0,
         exercises: JSON.parse(row[6])
       });
-    } catch (err) {
-      // Skip invalid rows silently
-    }
+    } catch (err) { /* Skip invalid rows silently */ }
   }
   
   // Read Bodyweight logs
@@ -83,15 +91,47 @@ function doGet(e) {
         weight: parseFloat(row[2]) || 0,
         notes: row[3] ? row[3].toString() : ""
       });
-    } catch (err) {
-      // Skip invalid rows silently
-    }
+    } catch (err) { /* Skip invalid rows silently */ }
+  }
+  
+  // Read Calories logs
+  const caloriesSheet = ss.getSheetByName("Calories");
+  const caloriesData = caloriesSheet.getDataRange().getValues();
+  const caloriesLogs = [];
+  for (let i = 1; i < caloriesData.length; i++) {
+    const row = caloriesData[i];
+    if (!row[0] || !row[1]) continue;
+    try {
+      caloriesLogs.push({
+        id: row[0].toString(),
+        date: new Date(row[1]).toISOString(),
+        calories: parseInt(row[2]) || 0
+      });
+    } catch (err) { /* Skip invalid rows silently */ }
+  }
+  
+  // Read Body Fat logs
+  const bodyfatSheet = ss.getSheetByName("BodyFat");
+  const bodyfatData = bodyfatSheet.getDataRange().getValues();
+  const bodyfatLogs = [];
+  for (let i = 1; i < bodyfatData.length; i++) {
+    const row = bodyfatData[i];
+    if (!row[0] || !row[1]) continue;
+    try {
+      bodyfatLogs.push({
+        id: row[0].toString(),
+        date: new Date(row[1]).toISOString(),
+        fatPercent: parseFloat(row[2]) || 0
+      });
+    } catch (err) { /* Skip invalid rows silently */ }
   }
   
   const payload = {
     success: true,
     workouts: workouts,
-    bodyweight: weightLogs
+    bodyweight: weightLogs,
+    nutrition: caloriesLogs,
+    bodyfat: bodyfatLogs
   };
   
   return ContentService.createTextOutput(JSON.stringify(payload))
@@ -116,6 +156,8 @@ function doPost(e) {
   if (action === "sync") {
     const workoutsToSync = postData.workouts || [];
     const weightsToSync = postData.bodyweight || [];
+    const caloriesToSync = postData.nutrition || [];
+    const bodyfatToSync = postData.bodyfat || [];
     
     // 1. Sync Workouts
     if (workoutsToSync.length > 0) {
@@ -123,11 +165,10 @@ function doPost(e) {
       const workoutsRows = workoutsSheet.getDataRange().getValues();
       
       workoutsToSync.forEach(w => {
-        // Search if workout ID already exists to avoid duplication (Upsert)
         let rowIdx = -1;
         for (let i = 1; i < workoutsRows.length; i++) {
           if (workoutsRows[i][0].toString() === w.id.toString()) {
-            rowIdx = i + 1; // 1-indexed for sheet access (+1 for header row)
+            rowIdx = i + 1;
             break;
           }
         }
@@ -143,10 +184,8 @@ function doPost(e) {
         ];
         
         if (rowIdx !== -1) {
-          // Overwrite existing row
           workoutsSheet.getRange(rowIdx, 1, 1, 7).setValues([rowData]);
         } else {
-          // Append new row
           workoutsSheet.appendRow(rowData);
         }
       });
@@ -158,7 +197,6 @@ function doPost(e) {
       const weightRows = weightSheet.getDataRange().getValues();
       
       weightsToSync.forEach(log => {
-        // Search if Weight Log ID already exists (Upsert)
         let rowIdx = -1;
         for (let i = 1; i < weightRows.length; i++) {
           if (weightRows[i][0].toString() === log.id.toString()) {
@@ -178,6 +216,62 @@ function doPost(e) {
           weightSheet.getRange(rowIdx, 1, 1, 4).setValues([rowData]);
         } else {
           weightSheet.appendRow(rowData);
+        }
+      });
+    }
+    
+    // 3. Sync Calories Logs
+    if (caloriesToSync.length > 0) {
+      const caloriesSheet = ss.getSheetByName("Calories");
+      const caloriesRows = caloriesSheet.getDataRange().getValues();
+      
+      caloriesToSync.forEach(log => {
+        let rowIdx = -1;
+        for (let i = 1; i < caloriesRows.length; i++) {
+          if (caloriesRows[i][0].toString() === log.id.toString()) {
+            rowIdx = i + 1;
+            break;
+          }
+        }
+        
+        const rowData = [
+          log.id.toString(),
+          new Date(log.date).toISOString(),
+          parseInt(log.calories) || 0
+        ];
+        
+        if (rowIdx !== -1) {
+          caloriesSheet.getRange(rowIdx, 1, 1, 3).setValues([rowData]);
+        } else {
+          caloriesSheet.appendRow(rowData);
+        }
+      });
+    }
+    
+    // 4. Sync BodyFat Logs
+    if (bodyfatToSync.length > 0) {
+      const bodyfatSheet = ss.getSheetByName("BodyFat");
+      const bodyfatRows = bodyfatSheet.getDataRange().getValues();
+      
+      bodyfatToSync.forEach(log => {
+        let rowIdx = -1;
+        for (let i = 1; i < bodyfatRows.length; i++) {
+          if (bodyfatRows[i][0].toString() === log.id.toString()) {
+            rowIdx = i + 1;
+            break;
+          }
+        }
+        
+        const rowData = [
+          log.id.toString(),
+          new Date(log.date).toISOString(),
+          parseFloat(log.fatPercent) || 0
+        ];
+        
+        if (rowIdx !== -1) {
+          bodyfatSheet.getRange(rowIdx, 1, 1, 3).setValues([rowData]);
+        } else {
+          bodyfatSheet.appendRow(rowData);
         }
       });
     }

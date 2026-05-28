@@ -95,6 +95,36 @@
           </div>
         </div>
 
+        <!-- Calories Tracker Card -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="flame" style="width: 16px; height: 16px; color: #FF9500;"></i>
+              <div class="card-title">Log Daily Calories</div>
+            </div>
+            <div class="card-subtitle" id="profile-last-calories">Last log: —</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="calories-input" class="input-field" placeholder="e.g. 2500" style="flex: 2;">
+            <button class="btn btn-primary" onclick="metricsManager.logCalories()" style="flex: 1; padding: 0;">Log</button>
+          </div>
+        </div>
+
+        <!-- Body Fat Tracker Card -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="percent" style="width: 16px; height: 16px; color: #30D158;"></i>
+              <div class="card-title">Log Body Fat %</div>
+            </div>
+            <div class="card-subtitle" id="profile-last-bodyfat">Last log: —</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" step="0.1" id="bodyfat-input" class="input-field" placeholder="e.g. 15.4" style="flex: 2;">
+            <button class="btn btn-primary" onclick="metricsManager.logBodyfat()" style="flex: 1; padding: 0;">Log</button>
+          </div>
+        </div>
+
         <!-- Weekly Workout Frequency Visualizer -->
         <div class="card">
           <div class="card-header">
@@ -125,6 +155,28 @@
           </div>
           <div style="height: 180px; position: relative;">
             <canvas id="weightChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Calories Intake Analytics Chart Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Calories Intake Analytics</div>
+            <div class="card-subtitle">Daily calories logged (Last 7 Days)</div>
+          </div>
+          <div style="height: 180px; position: relative;">
+            <canvas id="caloriesChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Body Fat Trend Chart Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Body Fat Analytics</div>
+            <div class="card-subtitle">Body fat % trend over time</div>
+          </div>
+          <div style="height: 180px; position: relative;">
+            <canvas id="bodyfatChart"></canvas>
           </div>
         </div>
 
