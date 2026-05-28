@@ -1,5 +1,5 @@
 // sw.js - Service Worker for Offline Gym Use
-const CACHE_NAME = "hevy-clone-v2";
+const CACHE_NAME = "hevy-clone-v3";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -41,8 +41,21 @@ self.addEventListener("activate", (event) => {
 
 // Fetch Event - Cache first strategy with network fallback
 self.addEventListener("fetch", (event) => {
-  // Avoid caching non-HTTP requests (like browser extension calls)
-  if (!event.request.url.startsWith(self.location.origin) && !event.request.url.startsWith("https://")) {
+  // 1. Only intercept GET requests (never intercept POST sync requests)
+  if (event.request.method !== "GET") {
+    return;
+  }
+  
+  // 2. Do NOT intercept Google Apps Script sync API calls!
+  if (event.request.url.includes("script.google.com") || event.request.url.includes("googleusercontent.com")) {
+    return;
+  }
+
+  // 3. Avoid caching non-HTTP requests (like browser extension calls)
+  if (!event.request.url.startsWith(self.location.origin) && 
+      !event.request.url.includes("unpkg.com") && 
+      !event.request.url.includes("googleapis.com") && 
+      !event.request.url.includes("gstatic.com")) {
     return;
   }
   
