@@ -117,6 +117,30 @@ const settingsManager = {
     syncManager.manualSync(); // Trigger initial handshake!
   },
 
+  async forceAppUpdate() {
+    if (confirm("Clear offline cache and update to the latest version? (Your workout history is safe and will NOT be lost!)")) {
+      if ('caches' in window) {
+        try {
+          const cacheKeys = await caches.keys();
+          await Promise.all(cacheKeys.map(key => caches.delete(key)));
+        } catch (e) {
+          console.error("Cache clear failed:", e);
+        }
+      }
+      
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(reg => reg.unregister()));
+        } catch (e) {
+          console.error("Service worker unregistration failed:", e);
+        }
+      }
+      
+      window.location.href = window.location.pathname + '?update=' + Date.now();
+    }
+  },
+
   // Export DB content as a downloadable JSON file
   async exportData() {
     try {
