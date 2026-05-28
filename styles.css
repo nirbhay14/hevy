@@ -470,6 +470,10 @@ nav {
   transition: all 0.25s ease;
 }
 
+.freq-dot.future {
+  opacity: 0.35;
+}
+
 .freq-dot.completed {
   background: rgba(48, 209, 88, 0.15);
   border-color: var(--success-color);

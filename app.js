@@ -1447,7 +1447,7 @@ const dashboardManager = {
     const container = document.getElementById('freq-calendar-container');
     container.innerHTML = '';
 
-    // Day Labels
+    // Day Labels: Sunday through Saturday
     const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     days.forEach(day => {
       const el = document.createElement('div');
@@ -1456,15 +1456,26 @@ const dashboardManager = {
       container.appendChild(el);
     });
 
-    // Populate past 7 days cells
+    // Populate current calendar week (Sunday to Saturday)
     const now = new Date();
+    const currentDayOfWeek = now.getDay(); // 0 (Sun) to 6 (Sat)
+    
+    // Calculate Sunday of this week
+    const sunday = new Date(now);
+    sunday.setDate(now.getDate() - currentDayOfWeek);
+    
     const dotsList = [];
 
-    for (let i = 6; i >= 0; i--) {
-      const targetDate = new Date();
-      targetDate.setDate(now.getDate() - i);
+    for (let i = 0; i < 7; i++) {
+      const targetDate = new Date(sunday);
+      targetDate.setDate(sunday.getDate() + i);
       
       const isToday = targetDate.toDateString() === now.toDateString();
+      
+      // Check if targetDate is in the future relative to today's date
+      const targetDateStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+      const nowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const isFuture = targetDateStart > nowStart;
       
       // Determine if a workout fell on this day
       const completedOnDay = workouts.some(w => {
@@ -1475,13 +1486,14 @@ const dashboardManager = {
       dotsList.push({
         num: targetDate.getDate(),
         isToday,
+        isFuture,
         completed: completedOnDay
       });
     }
 
     dotsList.forEach(dot => {
       const el = document.createElement('div');
-      el.className = `freq-dot ${dot.completed ? 'completed' : ''} ${dot.isToday ? 'today' : ''}`;
+      el.className = `freq-dot ${dot.completed ? 'completed' : ''} ${dot.isToday ? 'today' : ''} ${dot.isFuture ? 'future' : ''}`;
       el.innerText = dot.num;
       container.appendChild(el);
     });
