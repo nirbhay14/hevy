@@ -92,7 +92,10 @@ const settingsManager = {
   async init() {
     this.units = await dbHelper.getSetting('units', 'lbs');
     this.defaultRestTime = parseInt(await dbHelper.getSetting('defaultRestTime', 90));
-    this.syncUrl = await dbHelper.getSetting('syncUrl', '');
+    
+    // Force-initialize with your correct, full Web App URL to bypass any copy-paste or truncation issues!
+    this.syncUrl = 'https://script.google.com/macros/s/AKfycbzAlxemxHzTHpmFUnGpaZjIc63z4ZOAVwT4QbkGdwI_gflWLY1aDxJl_YcfsMmoU2BD/exec';
+    await dbHelper.saveSetting('syncUrl', this.syncUrl);
     
     // Set UI dropdown selections & inputs
     document.getElementById('setting-units').value = this.units;
