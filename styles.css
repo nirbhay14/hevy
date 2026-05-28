@@ -1,43 +1,54 @@
-/* styles.css - Modern Web Gym Tracking App Clone UI stylesheet */
-
-/* Google Fonts: Inter for crisp typographic layout and clean numbers */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* styles.css - Cupertino Modern Visual Gym App Stylesheet */
 
 :root {
-  /* System Dark Theme Palette */
-  --bg-color: #0c0c0e;
-  --card-bg: #16161a;
-  --card-bg-elevated: #22222a;
-  --accent-color: #0A84FF;
-  --accent-color-rgb: 10, 132, 255;
-  --success-color: #30D158;
-  --success-color-rgb: 48, 209, 88;
-  --warmup-color: #FF9F0A;
-  --dropset-color: #BF5AF2;
-  --failure-color: #FF453A;
-  --border-color: #24242b;
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0ab;
-  --text-muted: #636366;
-  --glass-bg: rgba(22, 22, 26, 0.75);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-top: env(safe-area-inset-top, 0px);
+  /* System Premium Dark Theme Palette (Zinc/Obsidian) */
+  --bg-color: #09090b;       /* Obsidian black deep canvas */
+  --card-bg: #18181b;        /* Charcoal Zinc card container */
+  --card-bg-elevated: #27272a;/* zinc elevated active actions */
+  
+  /* Vibrant Semantic Accents */
+  --accent-color: #0A84FF;   /* Vibrant electric blue */
+  --accent-rgb: 10, 132, 255;
+  --accent-glow: rgba(10, 132, 255, 0.15);
+  
+  --success-color: #30D158;  /* iOS system green */
+  --success-rgb: 48, 209, 88;
+  
+  --warmup-color: #FFD60A;   /* Amber gold warmup tag */
+  --dropset-color: #FF375F;  /* Rose pink dropset tag */
+  --failure-color: #FF453A;  /* Crimson failure tag */
+  
+  /* Neutral Boarders & Fonts */
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --text-primary: #f4f4f5;   /* Crisp off-white */
+  --text-secondary: #a1a1aa; /* Muted zinc gray */
+  --text-muted: #52525b;     /* Darker grey indicators */
+  
+  /* Glassmorphism acrylic values */
+  --glass-bg: rgba(9, 9, 11, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  
+  /* iOS notches safe boundary paddings */
+  --safe-bottom: env(safe-area-inset-bottom, 16px);
+  --safe-top: env(safe-area-inset-top, 24px);
 }
 
-/* Reset and Core Layout */
+/* Base Global Reset and Elastic Feel */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  -webkit-user-select: none;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: #000;
   color: var(--text-primary);
-  line-height: 1.4;
+  line-height: 1.5;
   overflow: hidden;
   height: 100vh;
   height: 100dvh;
@@ -46,24 +57,24 @@ body {
   align-items: center;
 }
 
-/* Shell to contain the PWA to a phone format on wider screens */
+/* Phone Format Frame Emulator on Desktops */
 #app-shell {
   width: 100%;
-  max-width: 520px;
+  max-width: 480px;
   height: 100%;
   background-color: var(--bg-color);
   position: relative;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
-  border-left: 1px solid var(--border-color);
-  border-right: 1px solid var(--border-color);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8);
+  border-left: 1px solid rgba(255, 255, 255, 0.04);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
   overflow: hidden;
 }
 
-/* Header bar styling */
+/* Premium Header styling */
 header {
-  height: calc(56px + var(--safe-top));
+  height: calc(60px + var(--safe-top));
   padding-top: var(--safe-top);
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
@@ -73,16 +84,17 @@ header {
   align-items: center;
   padding-left: 20px;
   padding-right: 20px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--glass-border);
   z-index: 100;
   position: relative;
 }
 
 header h1 {
-  font-size: 20px;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #fff 30%, var(--accent-color) 100%);
+  letter-spacing: -0.8px;
+  background: linear-gradient(135deg, #ffffff 40%, #00d2ff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -91,7 +103,7 @@ header h1 {
   background: transparent;
   border: none;
   color: var(--accent-color);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -103,27 +115,28 @@ header h1 {
   opacity: 0.6;
 }
 
-/* Main View Scroll Area */
+/* Scrollable main view */
 main {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 16px 100px 16px;
+  padding: 20px 16px calc(88px + var(--safe-bottom)) 16px;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
-/* Bottom Navigation Bar */
+/* Bottom Tab Navigation bar with glass finish */
 nav {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: calc(64px + var(--safe-bottom));
+  height: calc(68px + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
   background: var(--glass-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid var(--border-color);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-top: 1px solid var(--glass-border);
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -137,12 +150,13 @@ nav {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  opacity: 0.65;
   text-decoration: none;
   font-size: 10px;
-  font-weight: 500;
-  gap: 4px;
-  transition: color 0.2s ease, transform 0.1s ease;
+  font-weight: 600;
+  gap: 6px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -150,133 +164,153 @@ nav {
 
 .nav-tab i {
   font-size: 20px;
-  transition: transform 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .nav-tab.active {
   color: var(--accent-color);
+  opacity: 1;
 }
 
 .nav-tab.active i {
-  transform: scale(1.1);
+  transform: scale(1.12) translateY(-2px);
 }
 
 .nav-tab:active i {
   transform: scale(0.9);
 }
 
-/* Tab Screens rendering */
+/* Tab Switching Screen Animation */
 .tab-screen {
   display: none;
-  animation: fadeIn 0.2s ease-out;
+  animation: tabSpring 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .tab-screen.active {
   display: block;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+@keyframes tabSpring {
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Reusable UI Components */
+/* Premium Card Components */
 .card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 20px;
+  padding: 18px;
   margin-bottom: 16px;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease;
 }
 
-.card:active {
-  /* Only clickable cards should scale */
+.card-clickable {
+  cursor: pointer;
 }
 
 .card-clickable:active {
-  transform: scale(0.98);
+  transform: scale(0.975);
   background-color: var(--card-bg-elevated);
+  border-color: var(--border-hover);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .card-title {
+  font-family: 'Outfit', sans-serif;
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
+  letter-spacing: -0.2px;
 }
 
 .card-subtitle {
   font-size: 12px;
   color: var(--text-secondary);
+  font-weight: 500;
 }
 
-/* Buttons */
+/* High Fidelity Buttons */
 .btn {
   background-color: var(--card-bg-elevated);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 12px 16px;
+  border-radius: 14px;
+  padding: 14px 18px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn:active {
-  transform: scale(0.97);
-  opacity: 0.8;
+  transform: scale(0.96);
+  opacity: 0.9;
 }
 
 .btn-primary {
-  background-color: var(--accent-color);
+  background: linear-gradient(135deg, var(--accent-color) 0%, #0056b3 100%);
   color: #fff;
   border: none;
+  box-shadow: 0 4px 14px rgba(10, 132, 255, 0.35);
+}
+
+.btn-primary:active {
+  box-shadow: 0 2px 4px rgba(10, 132, 255, 0.2);
 }
 
 .btn-success {
-  background-color: var(--success-color);
+  background: linear-gradient(135deg, var(--success-color) 0%, #1e8438 100%);
   color: #fff;
   border: none;
+  box-shadow: 0 4px 14px rgba(48, 209, 88, 0.3);
 }
 
 .btn-danger {
-  background-color: var(--failure-color);
+  background: linear-gradient(135deg, var(--failure-color) 0%, #b31d15 100%);
   color: #fff;
   border: none;
+  box-shadow: 0 4px 14px rgba(255, 69, 58, 0.3);
 }
 
 .btn-text {
   background: transparent;
   border: none;
   color: var(--accent-color);
-  padding: 6px;
+  padding: 8px;
   width: auto;
+  box-shadow: none;
+}
+
+.btn-text:active {
+  transform: none;
+  opacity: 0.6;
 }
 
 .btn-sm {
-  padding: 8px 12px;
+  padding: 8px 14px;
   font-size: 12px;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 /* Floating Action Button (FAB) */
 .fab {
   position: absolute;
-  right: 16px;
-  bottom: calc(80px + var(--safe-bottom));
+  right: 18px;
+  bottom: calc(88px + var(--safe-bottom));
   width: 56px;
   height: 56px;
   border-radius: 28px;
@@ -289,232 +323,252 @@ nav {
   z-index: 80;
   border: none;
   cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .fab:active {
-  transform: scale(0.92);
+  transform: scale(0.9);
 }
 
-/* Forms and Inputs */
+/* Inputs and Forms */
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .form-label {
   display: block;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
 .input-field {
   width: 100%;
   background-color: var(--card-bg-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px;
   color: var(--text-primary);
   font-size: 14px;
+  font-weight: 500;
   outline: none;
   font-family: inherit;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-field:focus {
   border-color: var(--accent-color);
+  box-shadow: 0 0 10px rgba(10, 132, 255, 0.15);
 }
 
-.input-row {
-  display: flex;
-  gap: 12px;
-}
-
-/* Profile Tab Layout */
+/* Profile Tab components */
 .profile-hero {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   margin-bottom: 24px;
-  padding-top: 8px;
+  padding-top: 10px;
 }
 
 .profile-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 32px;
-  background: linear-gradient(135deg, var(--accent-color), #5856D6);
+  width: 68px;
+  height: 68px;
+  border-radius: 34px;
+  background: linear-gradient(135deg, var(--accent-color) 0%, #bf5af2 100%);
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 24px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 26px;
   font-weight: 800;
+  box-shadow: 0 4px 15px rgba(191, 90, 242, 0.25);
 }
 
 .profile-meta h2 {
-  font-size: 22px;
-  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .streak-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background-color: rgba(255, 159, 10, 0.15);
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(255, 159, 10, 0.18) 0%, rgba(255, 69, 58, 0.12) 100%);
   color: var(--warmup-color);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
+  border: 1px solid rgba(255, 159, 10, 0.3);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
   font-weight: 700;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
-/* Grid of mini stats */
+/* Profile Grid Stats */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .stat-item {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 12px 8px;
+  border-radius: 16px;
+  padding: 14px 8px;
   text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .stat-val {
-  font-size: 18px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
   font-weight: 800;
   color: var(--text-primary);
 }
 
 .stat-lbl {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  font-weight: 700;
   margin-top: 4px;
 }
 
-/* Custom Workout Frequency Calendar Tracker */
+/* Frequency calendar dots grid */
 .frequency-calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .freq-day-lbl {
   text-align: center;
   font-size: 10px;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .freq-dot {
   aspect-ratio: 1;
-  background-color: var(--border-color);
-  border-radius: 6px;
+  background-color: var(--card-bg-elevated);
+  border-radius: 8px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 9px;
-  color: var(--text-muted);
-  font-weight: 600;
-  transition: all 0.3s ease;
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  border: 1.5px solid transparent;
+  transition: all 0.25s ease;
 }
 
 .freq-dot.completed {
-  background-color: rgba(48, 209, 88, 0.2);
-  border: 1.5px solid var(--success-color);
+  background: rgba(48, 209, 88, 0.15);
+  border-color: var(--success-color);
   color: var(--success-color);
+  box-shadow: 0 0 10px rgba(48, 209, 88, 0.12);
 }
 
 .freq-dot.today {
-  border: 1.5px solid var(--accent-color);
+  border-color: var(--accent-color);
 }
 
-/* Workouts / Template Creator Tab */
+/* Routines & Workout Templates */
 .workout-templates-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .section-title {
+  font-family: 'Outfit', sans-serif;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.3px;
 }
 
 .template-card {
-  margin-bottom: 12px;
-  position: relative;
+  margin-bottom: 14px;
+  border-left: 3px solid var(--accent-color);
 }
 
 .template-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 12px;
-  border-top: 1px solid var(--border-color);
+  gap: 16px;
+  margin-top: 14px;
+  border-top: 1.5px solid var(--border-color);
   padding-top: 12px;
 }
 
 .exercise-mini-list {
   font-size: 12px;
   color: var(--text-secondary);
-  margin-top: 8px;
+  margin-top: 10px;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
-/* Exercise Tab & Details Modal */
-.search-bar-container {
+.exercise-mini-list li {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  align-items: center;
+  gap: 6px;
 }
 
+.exercise-mini-list li::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--accent-color);
+}
+
+/* Muscle pills filters */
 .muscle-pill-container {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
   padding-bottom: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   -webkit-overflow-scrolling: touch;
-}
-
-.muscle-pill-container::-webkit-scrollbar {
-  display: none;
 }
 
 .muscle-pill {
   white-space: nowrap;
   background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: 16px;
+  border: 1.5px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 20px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
   cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .muscle-pill.active {
   background-color: var(--accent-color);
   color: #fff;
   border-color: var(--accent-color);
+  box-shadow: 0 4px 10px var(--accent-glow);
 }
 
+/* Exercise item */
 .exercise-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .exercise-item {
@@ -523,10 +577,10 @@ nav {
   align-items: center;
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  padding: 14px 16px;
-  border-radius: 12px;
+  padding: 16px 18px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .exercise-item:active {
@@ -535,31 +589,45 @@ nav {
 
 .exercise-info h4 {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .exercise-info span {
-  font-size: 11px;
-  color: var(--text-secondary);
-  background-color: var(--card-bg-elevated);
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-color);
+  background-color: var(--accent-glow);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-top: 6px;
   display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Modals (Slide-up drawer or standard popup) */
+/* Drawer half-sheets overlays */
+.drawer-handle {
+  width: 40px;
+  height: 5px;
+  background-color: var(--text-muted);
+  border-radius: 3px;
+  margin: 10px auto 0 auto;
+  opacity: 0.5;
+}
+
 .modal-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 200;
   display: none;
   justify-content: center;
-  align-items: flex-end; /* Drawer slide-up from bottom */
+  align-items: flex-end; /* Mobile native bottom drawer layout */
 }
 
 .modal-overlay.active {
@@ -568,49 +636,53 @@ nav {
 
 .modal-content {
   width: 100%;
-  max-height: 85%;
+  max-height: 88%;
   background-color: var(--bg-color);
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  border-top: 1px solid var(--border-color);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-top: 1.5px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.25s cubic-bezier(0.1, 0.76, 0.55, 0.94);
-  padding-bottom: var(--safe-bottom);
+  animation: drawerSlideUp 0.35s cubic-bezier(0.32, 0.94, 0.6, 1);
+  padding-bottom: calc(10px + var(--safe-bottom));
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
 }
 
-@keyframes slideUp {
+@keyframes drawerSlideUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
 
 .modal-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 18px 20px;
+  border-bottom: 1.5px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-title {
+  font-family: 'Outfit', sans-serif;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.3px;
 }
 
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 20px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-footer {
-  padding: 16px;
-  border-top: 1px solid var(--border-color);
+  padding: 16px 20px;
+  border-top: 1.5px solid var(--border-color);
   display: flex;
-  gap: 12px;
+  gap: 14px;
 }
 
-/* Active Workout Sheet Overlay */
+/* Active Workout Sheet overlay layout */
 #active-workout-sheet {
   position: absolute;
   top: 0;
@@ -622,7 +694,7 @@ nav {
   display: flex;
   flex-direction: column;
   transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 0.94);
+  transition: transform 0.45s cubic-bezier(0.32, 0.94, 0.6, 1);
   padding-bottom: var(--safe-bottom);
 }
 
@@ -631,16 +703,15 @@ nav {
 }
 
 #active-workout-sheet.minimized {
-  transform: translateY(calc(100% - 56px - var(--safe-bottom)));
+  transform: translateY(calc(100% - 64px - var(--safe-bottom)));
 }
 
-/* Mini Bottom Bar when Minimized */
 .minimized-workout-bar {
   display: none;
-  height: 56px;
-  background-color: var(--accent-color);
+  height: 64px;
+  background: linear-gradient(135deg, var(--accent-color) 0%, #0056b3 100%);
   color: #fff;
-  padding: 0 16px;
+  padding: 0 20px;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
@@ -649,6 +720,7 @@ nav {
   left: 0;
   width: 100%;
   z-index: 10;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.3);
 }
 
 #active-workout-sheet.minimized .minimized-workout-bar {
@@ -658,46 +730,52 @@ nav {
 .minimized-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  font-family: 'Outfit', sans-serif;
   font-weight: 700;
+  font-size: 15px;
 }
 
 .minimized-info span {
-  font-size: 13px;
+  font-size: 12px;
   background: rgba(255, 255, 255, 0.2);
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
 }
 
 .workout-scroll-area {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 20px 16px;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Workout Active Exercise Styling */
+/* Workout Active Exercise Logging Card */
 .workout-exercise-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 14px;
-  margin-bottom: 14px;
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 .wec-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .wec-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
   color: var(--accent-color);
+  cursor: pointer;
 }
 
-/* Set Table Styling */
+/* Set Table logging list */
 .set-table {
   width: 100%;
   border-collapse: collapse;
@@ -706,10 +784,11 @@ nav {
 .set-table th {
   text-align: center;
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   text-transform: uppercase;
-  padding-bottom: 6px;
+  padding-bottom: 8px;
   font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .set-table th:first-child { text-align: left; }
@@ -717,15 +796,15 @@ nav {
 
 .set-row {
   border-bottom: 1px solid transparent;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.25s ease;
 }
 
 .set-row.completed-row {
-  background-color: rgba(48, 209, 88, 0.08);
+  background-color: rgba(48, 209, 88, 0.06);
 }
 
 .set-row td {
-  padding: 6px 4px;
+  padding: 8px 4px;
   vertical-align: middle;
   text-align: center;
 }
@@ -741,8 +820,14 @@ nav {
   border-radius: 12px;
   background-color: var(--card-bg-elevated);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.set-num-badge:active {
+  transform: scale(0.85);
 }
 
 .set-num-badge.Warmup { background-color: var(--warmup-color); color: #000; }
@@ -750,21 +835,23 @@ nav {
 .set-num-badge.Failure { background-color: var(--failure-color); color: #fff; }
 
 .set-input {
-  width: 52px;
-  height: 28px;
+  width: 56px;
+  height: 32px;
   background-color: var(--card-bg-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
   color: #fff;
   text-align: center;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   outline: none;
   font-family: inherit;
+  transition: all 0.2s ease;
 }
 
 .set-input:focus {
   border-color: var(--accent-color);
+  background-color: var(--card-bg);
 }
 
 .set-input::placeholder {
@@ -774,49 +861,60 @@ nav {
 .set-prev-label {
   font-size: 11px;
   color: var(--text-secondary);
+  font-weight: 500;
 }
 
-/* Tick checkbox for sets */
+/* Tick checkbox check state spring pop */
 .set-checkbox {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: var(--card-bg-elevated);
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
   display: inline-flex;
   justify-content: center;
   align-items: center;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .set-checkbox.checked {
   background-color: var(--success-color);
   border-color: var(--success-color);
   color: #fff;
-  transform: scale(1.05);
+  transform: scale(1.08);
+  animation: checkboxPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes checkboxPop {
+  0% { transform: scale(0.9); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1.08); }
 }
 
 .set-checkbox:active {
-  transform: scale(0.9);
+  transform: scale(0.85);
 }
 
-/* Float Rest Timer Component */
+/* Rest timer slide down header banner */
 #rest-timer-banner {
   position: absolute;
-  top: calc(56px + var(--safe-top));
+  top: calc(60px + var(--safe-top));
   left: 0;
   width: 100%;
-  height: 48px;
-  background-color: var(--card-bg-elevated);
+  height: 52px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1.5px solid var(--accent-color);
   display: none;
   justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 20px;
   z-index: 160;
-  animation: slideDownRest 0.3s cubic-bezier(0.1, 0.76, 0.55, 0.94);
+  animation: slideDownRest 0.35s cubic-bezier(0.32, 0.94, 0.6, 1);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
 }
 
 @keyframes slideDownRest {
@@ -831,19 +929,20 @@ nav {
 .rest-timer-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  font-family: 'Outfit', sans-serif;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .rest-timer-info i {
   color: var(--accent-color);
-  animation: pulse 1s infinite alternate;
+  animation: pulsePulse 1.2s infinite alternate;
 }
 
-@keyframes pulse {
-  from { opacity: 0.6; }
-  to { opacity: 1; }
+@keyframes pulsePulse {
+  from { transform: scale(0.95); opacity: 0.6; }
+  to { transform: scale(1.05); opacity: 1; }
 }
 
 .rest-timer-controls {
@@ -851,42 +950,52 @@ nav {
   gap: 8px;
 }
 
-/* History logs list view */
+/* History tab listings */
 .history-item {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 14px;
+  border-radius: 20px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.history-item:active {
+  transform: scale(0.98);
+  background-color: var(--card-bg-elevated);
 }
 
 .history-item-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .history-item-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
 }
 
 .history-item-date {
   font-size: 11px;
   color: var(--text-secondary);
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 .history-item-meta {
   display: flex;
-  gap: 16px;
+  gap: 18px;
   font-size: 12px;
   color: var(--text-secondary);
-  margin-bottom: 12px;
-  background-color: rgba(255, 255, 255, 0.03);
-  padding: 6px 12px;
-  border-radius: 6px;
+  margin-bottom: 14px;
+  background-color: rgba(255, 255, 255, 0.02);
+  padding: 8px 14px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
 }
 
@@ -897,22 +1006,23 @@ nav {
 .history-exercise-line {
   font-size: 12px;
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .history-exercise-line strong {
   color: var(--text-primary);
 }
 
-/* Settings and Import/Export panel style */
+/* Settings and Cloud Sync setup */
 .settings-section-title {
-  font-size: 14px;
-  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
   color: var(--accent-color);
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-top: 20px;
-  margin-bottom: 10px;
+  letter-spacing: 1.2px;
+  margin-top: 24px;
+  margin-bottom: 12px;
 }
 
 .setting-row {
@@ -921,88 +1031,70 @@ nav {
   align-items: center;
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  padding: 12px 16px;
-  border-radius: 12px;
-  margin-bottom: 8px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .setting-info h4 {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .setting-info p {
   font-size: 11px;
   color: var(--text-secondary);
+  margin-top: 2px;
 }
 
 .setting-control select {
   background-color: var(--card-bg-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
   color: #fff;
-  padding: 6px 10px;
+  padding: 8px 12px;
   font-size: 13px;
+  font-weight: 600;
   outline: none;
   font-family: inherit;
-}
-
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+}
+
+/* Sync indicator status */
+#sync-status-badge {
   background-color: var(--card-bg-elevated);
-  transition: .3s;
-  border-radius: 24px;
-  border: 1px solid var(--border-color);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 3px;
-  bottom: 3px;
-  background-color: var(--text-secondary);
-  transition: .3s;
-  border-radius: 50%;
+#sync-status-badge.connected {
+  background-color: rgba(48, 209, 88, 0.15);
+  color: var(--success-color);
 }
 
-input:checked + .toggle-slider {
-  background-color: var(--success-color);
-  border-color: var(--success-color);
+#sync-status-badge.syncing {
+  background-color: rgba(255, 214, 10, 0.15);
+  color: var(--warmup-color);
 }
 
-input:checked + .toggle-slider:before {
-  transform: translateX(20px);
-  background-color: #fff;
+#sync-status-badge.error {
+  background-color: rgba(255, 69, 58, 0.15);
+  color: var(--failure-color);
 }
 
-/* Success Celebration Fullscreen Screen */
+/* Fullscreen completion trophy celebration */
 #celebration-screen {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(12, 12, 14, 0.95);
+  background-color: rgba(9, 9, 11, 0.96);
   z-index: 300;
   display: none;
   flex-direction: column;
@@ -1010,6 +1102,8 @@ input:checked + .toggle-slider:before {
   align-items: center;
   text-align: center;
   padding: 32px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 #celebration-screen.active {
@@ -1017,78 +1111,72 @@ input:checked + .toggle-slider:before {
 }
 
 .celebration-icon {
-  width: 96px;
-  height: 96px;
-  border-radius: 48px;
-  background-color: rgba(48, 209, 88, 0.15);
+  width: 100px;
+  height: 100px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, rgba(48, 209, 88, 0.2) 0%, rgba(0, 210, 255, 0.15) 100%);
   color: var(--success-color);
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 48px;
-  margin-bottom: 24px;
-  animation: scalePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  font-size: 52px;
+  margin-bottom: 28px;
+  animation: celebrationPop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 8px 30px rgba(48, 209, 88, 0.25);
 }
 
-@keyframes scalePop {
-  0% { transform: scale(0); opacity: 0; }
-  70% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes celebrationPop {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  70% { transform: scale(1.1) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
 .celebration-title {
-  font-size: 26px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 28px;
   font-weight: 800;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, #fff 40%, var(--success-color) 100%);
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, #ffffff 30%, var(--success-color) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  letter-spacing: -0.8px;
 }
 
 .celebration-subtitle {
   font-size: 14px;
   color: var(--text-secondary);
-  margin-bottom: 32px;
+  margin-bottom: 36px;
+  max-width: 280px;
+  line-height: 1.6;
 }
 
-/* Custom Modal Select Exercice table/list */
+/* Selector select list items */
 .exercise-select-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  padding: 12px 14px;
-  border-radius: 10px;
-  margin-bottom: 8px;
+  border: 1.5px solid var(--border-color);
+  padding: 14px 16px;
+  border-radius: 14px;
+  margin-bottom: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .exercise-select-item.selected {
   border-color: var(--accent-color);
-  background-color: rgba(10, 132, 255, 0.05);
+  background-color: var(--accent-glow);
 }
 
-/* Rest timer circle animation (optional decorative) */
+/* Linear progress rest indicator */
 .rest-radial-bar {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 3px;
-  background-color: var(--accent-color);
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent-color) 0%, #00d2ff 100%);
   transition: width 1s linear;
   width: 0;
+  box-shadow: 0 0 10px rgba(0, 210, 255, 0.35);
 }
-
-/* Cloud Sync status colors */
-#sync-status-badge.connected {
-  color: var(--success-color);
-}
-#sync-status-badge.error {
-  color: var(--failure-color);
-}
-#sync-status-badge.syncing {
-  color: var(--warmup-color);
-}
-

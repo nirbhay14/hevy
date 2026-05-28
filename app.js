@@ -431,6 +431,14 @@ const routinesManager = {
 
   async render() {
     this.routines = await dbHelper.getRoutines();
+    
+    // Set dynamic workouts page greeting
+    const greeting = getGreeting();
+    const workoutsGreetingEl = document.getElementById('workouts-greeting');
+    if (workoutsGreetingEl) {
+      workoutsGreetingEl.innerText = `${greeting.text}!`;
+    }
+
     const container = document.getElementById('routines-list-container');
 
     if (this.routines.length === 0) {
@@ -830,6 +838,13 @@ const workoutManager = {
       `;
     }).join('');
     lucide.createIcons();
+    
+    // Select input text on focus for effortless gym adjustments!
+    container.querySelectorAll('.set-input').forEach(input => {
+      input.addEventListener('focus', () => {
+        setTimeout(() => input.select(), 50);
+      });
+    });
   },
 
   async addExercises(exercises) {
@@ -1341,6 +1356,27 @@ const syncManager = {
   }
 };
 
+// Helper to calculate dynamic greetings and gym motivation quotes
+function getGreeting() {
+  const hr = new Date().getHours();
+  let text = "Good evening";
+  if (hr < 12) text = "Good morning";
+  else if (hr < 17) text = "Good afternoon";
+  
+  const quotes = [
+    "Progress, not perfection.",
+    "Progressive overload is key.",
+    "The gym is your laboratory.",
+    "Make today's workout count!",
+    "Stronger than yesterday.",
+    "Focus on your goals.",
+    "Consistency is the true cheat code."
+  ];
+  const randQuote = quotes[Math.floor(Math.random() * quotes.length)];
+  
+  return { text, quote: randQuote };
+}
+
 // ==========================================
 // Profile Dashboard Calculator Engine
 // ==========================================
@@ -1368,6 +1404,13 @@ const dashboardManager = {
 
     this.calculateStreak(workouts);
     this.renderFrequencyGrid(workouts);
+    
+    // Set Personalized Dynamic Greeting & Quote
+    const greeting = getGreeting();
+    const greetingEl = document.getElementById('profile-greeting');
+    if (greetingEl) {
+      greetingEl.innerHTML = `${greeting.text}! <span style="font-size: 13px; font-weight:500; display:block; color:var(--text-secondary); margin-top:4px;">"${greeting.quote}"</span>`;
+    }
     
     // Metrics last weight logged
     await metricsManager.renderLastWeight();

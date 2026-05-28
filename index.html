@@ -12,7 +12,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="icon.svg">
   
-  <!-- Stylesheets -->
+  <!-- Stylesheets & Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   
   <!-- CDNs for External Libraries -->
@@ -58,7 +59,7 @@
         <div class="profile-hero">
           <div class="profile-avatar">U</div>
           <div class="profile-meta">
-            <h2>You</h2>
+            <h2 id="profile-greeting">Hello, Lifter!</h2>
             <div class="streak-badge">
               <i data-lucide="flame" style="width: 14px; height: 14px;"></i>
               <span id="profile-streak">0 Week Streak</span>
@@ -201,7 +202,7 @@
       <!-- TAB 2: WORKOUTS SCREEN (ROUTINES) -->
       <section id="tab-workouts" class="tab-screen">
         <div class="workout-templates-header">
-          <div class="section-title">Start Workout</div>
+          <div class="section-title" id="workouts-greeting">Start Workout</div>
         </div>
         
         <button class="btn btn-primary" onclick="workoutManager.startEmptyWorkout()" style="margin-bottom: 24px;">
@@ -271,6 +272,7 @@
 
     <!-- ACTIVE WORKOUT LOGGER SHEET OVERLAY (Slides up/down, can minimize) -->
     <div id="active-workout-sheet">
+      <div class="drawer-handle"></div>
       <!-- Minimized top banner inside tab bar view -->
       <div class="minimized-workout-bar" onclick="workoutManager.maximize()">
         <div class="minimized-info">
@@ -321,6 +323,7 @@
   <!-- 1. EXERCISE DETAIL MODAL (History, PRs) -->
   <div class="modal-overlay" id="exercise-detail-modal">
     <div class="modal-content">
+      <div class="drawer-handle"></div>
       <div class="modal-header">
         <h3 class="modal-title" id="edm-title">Exercise Detail</h3>
         <button class="btn btn-sm btn-text" onclick="modalManager.close('exercise-detail-modal')"><i data-lucide="x"></i></button>
@@ -346,6 +349,7 @@
   <!-- 2. ROUTINE CREATOR / EDITOR MODAL -->
   <div class="modal-overlay" id="routine-editor-modal">
     <div class="modal-content">
+      <div class="drawer-handle"></div>
       <div class="modal-header">
         <h3 class="modal-title" id="rem-title">Create Routine</h3>
         <button class="btn btn-sm btn-text" onclick="modalManager.close('routine-editor-modal')">Cancel</button>
@@ -378,6 +382,7 @@
   <!-- 3. SELECT EXERCISE DIALOG (Shared Selector) -->
   <div class="modal-overlay" id="exercise-select-modal" style="z-index: 210;">
     <div class="modal-content" style="max-height: 90%;">
+      <div class="drawer-handle"></div>
       <div class="modal-header">
         <h3 class="modal-title">Select Exercises</h3>
         <button class="btn btn-sm btn-text" onclick="modalManager.close('exercise-select-modal')">Cancel</button>
@@ -400,6 +405,7 @@
   <!-- 4. CUSTOM EXERCISE CREATOR DIALOG -->
   <div class="modal-overlay" id="exercise-create-modal" style="z-index: 220;">
     <div class="modal-content">
+      <div class="drawer-handle"></div>
       <div class="modal-header">
         <h3 class="modal-title">New Custom Exercise</h3>
         <button class="btn btn-sm btn-text" onclick="modalManager.close('exercise-create-modal')">Cancel</button>
