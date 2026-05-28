@@ -1,5 +1,5 @@
 // sw.js - Service Worker for Offline Gym Use
-const CACHE_NAME = "hevy-clone-v3";
+const CACHE_NAME = "hevy-clone-v4";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -39,7 +39,7 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Fetch Event - Cache first strategy with network fallback
+// Fetch Event - Network First falling back to Cache strategy
 self.addEventListener("fetch", (event) => {
   // 1. Only intercept GET requests (never intercept POST sync requests)
   if (event.request.method !== "GET") {
@@ -59,28 +59,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   
+  // 4. Network First with Cache Fallback
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return cached asset immediately, but trigger a fetch in the background to update cache
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
-          }
-        }).catch(() => { /* Silence network fetch errors when offline */ });
-        
-        return cachedResponse;
+    fetch(event.request).then((networkResponse) => {
+      // If network request succeeds, cache the updated asset and return it
+      if (networkResponse && networkResponse.status === 200) {
+        const responseCopy = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseCopy));
       }
-      
-      // Fallback to network
-      return fetch(event.request).then((networkResponse) => {
-        // Cache newly fetched assets
-        if (networkResponse && networkResponse.status === 200 && event.request.method === "GET") {
-          const responseCopy = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseCopy));
-        }
-        return networkResponse;
-      });
+      return networkResponse;
+    }).catch(() => {
+      // If network fails (offline), fall back to Cache
+      return caches.match(event.request);
     })
   );
 });
