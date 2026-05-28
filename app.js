@@ -1302,6 +1302,7 @@ const syncManager = {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        credentials: 'omit',
         body: JSON.stringify(payload)
       });
       
@@ -1343,8 +1344,11 @@ const syncManager = {
     this.updateStatusBadge();
     
     try {
-      // 1. First pull down any new logs from Google Sheets
-      const response = await fetch(url, { method: 'GET' });
+      // 1. First pull down any new logs from Google Sheets (bypassing Safari ITP redirects)
+      const response = await fetch(url, { 
+        method: 'GET',
+        credentials: 'omit'
+      });
       const data = await response.json();
       
       if (data && data.success) {
