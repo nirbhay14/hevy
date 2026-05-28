@@ -95,7 +95,7 @@ function doGet(e) {
   };
   
   return ContentService.createTextOutput(JSON.stringify(payload))
-                       .setMimeType(ContentService.MimeType.JSON);
+                       .setMimeType(ContentService.MimeType.TEXT);
 }
 
 // Handle POST Requests - Upload and upsert pending logs from phone
@@ -107,7 +107,7 @@ function doPost(e) {
     postData = JSON.parse(e.postData.contents);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Invalid JSON body" }))
-                         .setMimeType(ContentService.MimeType.JSON);
+                         .setMimeType(ContentService.MimeType.TEXT);
   }
   
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -183,9 +183,9 @@ function doPost(e) {
     }
     
     return ContentService.createTextOutput(JSON.stringify({ success: true }))
-                         .setMimeType(ContentService.MimeType.JSON);
+                         .setMimeType(ContentService.MimeType.TEXT);
   }
   
   return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Unknown action" }))
-                       .setMimeType(ContentService.MimeType.JSON);
+                       .setMimeType(ContentService.MimeType.TEXT);
 }
