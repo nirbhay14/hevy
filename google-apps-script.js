@@ -75,12 +75,17 @@ function doGet(e) {
   const weightLogs = [];
   for (let i = 1; i < weightData.length; i++) {
     const row = weightData[i];
-    weightLogs.push({
-      id: row[0].toString(),
-      date: new Date(row[1]).toISOString(),
-      weight: parseFloat(row[2]) || 0,
-      notes: row[3] ? row[3].toString() : ""
-    });
+    if (!row[0] || !row[1]) continue; // Skip empty rows
+    try {
+      weightLogs.push({
+        id: row[0].toString(),
+        date: new Date(row[1]).toISOString(),
+        weight: parseFloat(row[2]) || 0,
+        notes: row[3] ? row[3].toString() : ""
+      });
+    } catch (err) {
+      // Skip invalid rows silently
+    }
   }
   
   const payload = {
